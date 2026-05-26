@@ -1,5 +1,7 @@
 package com.personalblog.ragbackend.rag.core.mcp;
 
+import io.modelcontextprotocol.spec.McpSchema.Tool;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -10,7 +12,7 @@ public interface McpToolRegistry {
 
     Optional<McpToolExecutor> getExecutor(String toolId);
 
-    List<MCPTool> listAllTools();
+    List<Tool> listAllTools();
 
     List<McpToolExecutor> listAllExecutors();
 

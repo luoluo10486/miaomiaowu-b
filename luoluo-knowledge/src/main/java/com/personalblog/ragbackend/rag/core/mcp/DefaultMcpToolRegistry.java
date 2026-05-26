@@ -1,32 +1,33 @@
 package com.personalblog.ragbackend.rag.core.mcp;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class DefaultMcpToolRegistry implements McpToolRegistry {
 
-    private final Map<String, McpToolExecutor> executorMap = new ConcurrentHashMap<>();
+    private final Map<String, McpToolExecutor> executorMap = new HashMap<>();
     private final List<McpToolExecutor> autoDiscoveredExecutors;
 
     @PostConstruct
     public void init() {
-        if (CollectionUtils.isEmpty(autoDiscoveredExecutors)) {
+        if (CollUtil.isEmpty(autoDiscoveredExecutors)) {
             log.info("MCP tool registry skipped, no executors discovered");
             return;
         }
-
         for (McpToolExecutor executor : autoDiscoveredExecutors) {
             register(executor);
         }
@@ -41,7 +42,7 @@ public class DefaultMcpToolRegistry implements McpToolRegistry {
         }
 
         String toolId = executor.getToolId();
-        if (toolId == null || toolId.isBlank()) {
+        if (StrUtil.isBlank(toolId)) {
             log.warn("Ignore MCP executor with blank toolId");
             return;
         }
@@ -49,6 +50,8 @@ public class DefaultMcpToolRegistry implements McpToolRegistry {
         McpToolExecutor existing = executorMap.put(toolId, executor);
         if (existing != null) {
             log.warn("MCP tool already exists, replaced toolId={}", toolId);
+        } else {
+            log.info("MCP tool registered, toolId={}", toolId);
         }
     }
 
@@ -66,7 +69,7 @@ public class DefaultMcpToolRegistry implements McpToolRegistry {
     }
 
     @Override
-    public List<MCPTool> listAllTools() {
+    public List<Tool> listAllTools() {
         return executorMap.values().stream()
                 .map(McpToolExecutor::getToolDefinition)
                 .toList();

@@ -9,8 +9,6 @@ import com.personalblog.ragbackend.rag.core.intent.IntentNode;
 import com.personalblog.ragbackend.rag.core.intent.NodeScore;
 import com.personalblog.ragbackend.rag.core.intent.NodeScoreFilters;
 import com.personalblog.ragbackend.rag.core.intent.SubQuestionIntent;
-import com.personalblog.ragbackend.rag.core.mcp.MCPRequest;
-import com.personalblog.ragbackend.rag.core.mcp.MCPResponse;
 import com.personalblog.ragbackend.rag.core.mcp.McpParameterExtractor;
 import com.personalblog.ragbackend.rag.core.mcp.McpToolExecutor;
 import com.personalblog.ragbackend.rag.core.mcp.McpToolRegistry;
@@ -188,8 +186,10 @@ public class RetrievalEngine {
                 .map(intent -> CompletableFuture.supplyAsync(
                         () -> {
                             try {
-                                MCPResponse response = executeSingleMcpTool(question, intent);
-                                return response == null ? null : new ToolResult(response.getToolId(), toCallToolResult(response));
+                                CallToolResult result = executeSingleMcpTool(question, intent);
+                                IntentNode node = intent == null ? null : intent.node();
+                                String toolId = node == null ? "" : StrUtil.blankToDefault(node.getMcpToolId(), "");
+                                return result == null ? null : new ToolResult(toolId, result);
                             } catch (Exception exception) {
                                 IntentNode node = intent == null ? null : intent.node();
                                 String toolId = node == null ? "" : StrUtil.blankToDefault(node.getMcpToolId(), "");
@@ -213,15 +213,21 @@ public class RetrievalEngine {
                 ));
     }
 
-    private MCPResponse executeSingleMcpTool(String question, NodeScore intent) {
+    private CallToolResult executeSingleMcpTool(String question, NodeScore intent) {
         IntentNode node = intent == null ? null : intent.node();
         if (node == null || StrUtil.isBlank(node.getMcpToolId())) {
-            return MCPResponse.error("", "MISSING_TOOL", "Missing MCP tool id");
+            return CallToolResult.builder()
+                    .isError(true)
+                    .content(List.of(new TextContent("Missing MCP tool id")))
+                    .build();
         }
         String toolId = node.getMcpToolId().trim();
         Optional<McpToolExecutor> executorOpt = mcpToolRegistry.getExecutor(toolId);
         if (executorOpt.isEmpty()) {
-            return MCPResponse.error(toolId, "TOOL_NOT_FOUND", "MCP tool not found: " + toolId);
+            return CallToolResult.builder()
+                    .isError(true)
+                    .content(List.of(new TextContent("MCP tool not found: " + toolId)))
+                    .build();
         }
         McpToolExecutor executor = executorOpt.get();
         Map<String, Object> params = mcpParameterExtractor.extractParameters(
@@ -229,21 +235,7 @@ public class RetrievalEngine {
                 executor.getToolDefinition(),
                 node.getParamPromptTemplate()
         );
-        return executor.execute(MCPRequest.builder()
-                .toolId(toolId)
-                .userQuestion(question)
-                .parameters(params)
-                .build());
-    }
-
-    private CallToolResult toCallToolResult(MCPResponse response) {
-        String text = response.isSuccess()
-                ? StrUtil.blankToDefault(response.getTextResult(), "")
-                : StrUtil.blankToDefault(response.getErrorMessage(), "");
-        return CallToolResult.builder()
-                .isError(!response.isSuccess())
-                .content(List.of(new TextContent(text)))
-                .build();
+        return executor.execute(params);
     }
 
     private void appendSection(StringBuilder builder, String sectionName, int index, String question, String context) {
@@ -294,12 +286,12 @@ public class RetrievalEngine {
         }
     }
 
-    private record ToolResult(String toolId, CallToolResult result) {
-    }
-
     private record SubQuestionContext(String question,
                                       String kbContext,
                                       String mcpContext,
                                       Map<String, List<RetrievedChunk>> intentChunks) {
+    }
+
+    private record ToolResult(String toolId, CallToolResult result) {
     }
 }

@@ -1,9 +1,16 @@
 package com.personalblog.ragbackend.rag.core.mcp;
 
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
+
+import java.util.Map;
+
 public interface McpToolExecutor {
-    String getToolId();
+    Tool getToolDefinition();
 
-    MCPTool getToolDefinition();
+    CallToolResult execute(Map<String, Object> parameters);
 
-    MCPResponse execute(MCPRequest request);
+    default String getToolId() {
+        return getToolDefinition().name();
+    }
 }

@@ -8,10 +8,11 @@ import com.personalblog.ragbackend.infra.chat.LLMService;
 import com.personalblog.ragbackend.infra.convention.ChatMessage;
 import com.personalblog.ragbackend.infra.convention.ChatRequest;
 import com.personalblog.ragbackend.infra.util.LLMResponseCleaner;
-import com.personalblog.ragbackend.rag.core.prompt.PromptTemplateLoader;
 import com.personalblog.ragbackend.rag.constant.RAGConstant;
+import com.personalblog.ragbackend.rag.core.prompt.PromptTemplateLoader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -30,13 +31,13 @@ public class LLMMcpParameterExtractor implements McpParameterExtractor {
     private final ObjectMapper objectMapper;
 
     @Override
-    public Map<String, Object> extractParameters(String userQuestion, MCPTool tool) {
+    public Map<String, Object> extractParameters(String userQuestion, Tool tool) {
         return extractParameters(userQuestion, tool, null);
     }
 
     @Override
-    public Map<String, Object> extractParameters(String userQuestion, MCPTool tool, String customPromptTemplate) {
-        if (tool == null || CollUtil.isEmpty(tool.getParameters())) {
+    public Map<String, Object> extractParameters(String userQuestion, Tool tool, String customPromptTemplate) {
+        if (tool == null || tool.inputSchema() == null || CollUtil.isEmpty(tool.inputSchema().properties())) {
             return Collections.emptyMap();
         }
 
@@ -55,21 +56,23 @@ public class LLMMcpParameterExtractor implements McpParameterExtractor {
                     .topP(0.3D)
                     .thinking(false)
                     .build());
-            return fillDefaults(parseJsonResponse(raw, tool), tool);
+            Map<String, Object> extracted = parseJsonResponse(raw, tool);
+            fillDefaults(extracted, tool);
+            return extracted;
         } catch (Exception exception) {
-            log.warn("MCP parameter extraction failed, toolId={}", tool.getToolId(), exception);
+            log.warn("MCP parameter extraction failed, toolId={}", tool.name(), exception);
             return fillDefaults(new HashMap<>(), tool);
         }
     }
 
-    private String buildUserPrompt(String userQuestion, MCPTool tool) {
+    private String buildUserPrompt(String userQuestion, Tool tool) {
         return promptTemplateLoader.render(RAGConstant.MCP_PARAMETER_EXTRACT_USER_PROMPT_PATH, Map.of(
                 "tool_definition", buildToolDefinition(tool),
                 "user_question", StrUtil.blankToDefault(userQuestion, "")
         ));
     }
 
-    private Map<String, Object> parseJsonResponse(String raw, MCPTool tool) throws Exception {
+    private Map<String, Object> parseJsonResponse(String raw, Tool tool) throws Exception {
         if (StrUtil.isBlank(raw)) {
             return new HashMap<>();
         }
@@ -77,7 +80,7 @@ public class LLMMcpParameterExtractor implements McpParameterExtractor {
         Map<String, Object> parsed = objectMapper.readValue(cleaned, new TypeReference<LinkedHashMap<String, Object>>() {
         });
         Map<String, Object> result = new HashMap<>();
-        for (String key : tool.getParameters().keySet()) {
+        for (String key : tool.inputSchema().properties().keySet()) {
             if (parsed.containsKey(key) && parsed.get(key) != null) {
                 result.put(key, parsed.get(key));
             }
@@ -85,21 +88,26 @@ public class LLMMcpParameterExtractor implements McpParameterExtractor {
         return result;
     }
 
-    private Map<String, Object> fillDefaults(Map<String, Object> params, MCPTool tool) {
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> fillDefaults(Map<String, Object> params, Tool tool) {
         Map<String, Object> targetParams = params == null ? new HashMap<>() : params;
-        tool.getParameters().forEach((name, def) -> {
-            if (!targetParams.containsKey(name) && def != null && def.getDefaultValue() != null) {
-                targetParams.put(name, def.getDefaultValue());
+        tool.inputSchema().properties().forEach((name, def) -> {
+            if (targetParams.containsKey(name) || !(def instanceof Map<?, ?> defMap)) {
+                return;
+            }
+            Object defaultValue = defMap.get("default");
+            if (defaultValue != null) {
+                targetParams.put(name, defaultValue);
             }
         });
         return targetParams;
     }
 
-    private String buildToolDefinition(MCPTool tool) {
+    private String buildToolDefinition(Tool tool) {
         StringBuilder sb = new StringBuilder();
-        sb.append("toolId: ").append(tool.getToolId()).append('\n');
-        sb.append("description: ").append(StrUtil.blankToDefault(tool.getDescription(), "")).append('\n');
-        sb.append("parameters: ").append(tool.getParameters());
+        sb.append("toolId: ").append(tool.name()).append('\n');
+        sb.append("description: ").append(StrUtil.blankToDefault(tool.description(), "")).append('\n');
+        sb.append("parameters: ").append(tool.inputSchema() == null ? Collections.emptyMap() : tool.inputSchema().properties());
         return sb.toString();
     }
 }
