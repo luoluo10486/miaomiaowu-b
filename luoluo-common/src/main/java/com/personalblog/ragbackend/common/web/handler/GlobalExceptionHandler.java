@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -46,6 +47,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public Result<Void> handleIllegalArgument(IllegalArgumentException exception) {
         return Results.failure("400", exception.getMessage());
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public Result<Void> handleResponseStatusException(ResponseStatusException exception) {
+        String message = exception.getReason();
+        if (message == null || message.isBlank()) {
+            message = exception.getMessage();
+        }
+        String code = String.valueOf(exception.getStatusCode().value());
+        return Results.failure(code, message);
     }
 
     @ExceptionHandler(Exception.class)
