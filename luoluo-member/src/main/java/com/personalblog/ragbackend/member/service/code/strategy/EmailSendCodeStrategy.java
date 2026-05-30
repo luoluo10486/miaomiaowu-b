@@ -52,7 +52,7 @@ public class EmailSendCodeStrategy implements MemberSendCodeStrategy {
     public MemberSendVerifyCodeResponse send(MemberSendVerifyCodeRequest request) {
         String email = request.getEmail();
         if (email == null || email.isBlank()) {
-            throw new ResponseStatusException(BAD_REQUEST, "email must not be blank");
+            throw new ResponseStatusException(BAD_REQUEST, "邮箱不能为空");
         }
 
         String normalizedEmail = email.trim().toLowerCase();

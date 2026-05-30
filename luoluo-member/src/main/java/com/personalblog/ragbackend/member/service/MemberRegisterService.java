@@ -50,12 +50,12 @@ public class MemberRegisterService {
         switch (grantType) {
             case "password" -> {
                 if (username == null) {
-                    throw new ResponseStatusException(BAD_REQUEST, "username must not be blank");
+                    throw new ResponseStatusException(BAD_REQUEST, "用户名不能为空");
                 }
             }
             case "sms" -> {
                 if (phone == null) {
-                    throw new ResponseStatusException(BAD_REQUEST, "phone must not be blank");
+                    throw new ResponseStatusException(BAD_REQUEST, "手机号不能为空");
                 }
                 if (username == null) {
                     username = phone;
@@ -63,13 +63,13 @@ public class MemberRegisterService {
             }
             case "email" -> {
                 if (email == null) {
-                    throw new ResponseStatusException(BAD_REQUEST, "email must not be blank");
+                    throw new ResponseStatusException(BAD_REQUEST, "邮箱不能为空");
                 }
                 if (username == null) {
                     username = email;
                 }
             }
-            default -> throw new ResponseStatusException(BAD_REQUEST, "unsupported grantType: " + grantType);
+            default -> throw new ResponseStatusException(BAD_REQUEST, "不支持的授权类型：" + grantType);
         }
 
         ensureUnique(username, phone, email);
@@ -98,7 +98,7 @@ public class MemberRegisterService {
         try {
             createdUser = memberUserService.create(user);
         } catch (DuplicateKeyException exception) {
-            throw new ResponseStatusException(CONFLICT, "account information already exists", exception);
+            throw new ResponseStatusException(CONFLICT, "账号信息已存在", exception);
         }
 
         return memberAuthService.createLoginResponse(createdUser, grantType, request.getDeviceType(), clientIp);
@@ -106,46 +106,46 @@ public class MemberRegisterService {
 
     private void verifySmsCode(String phone, String smsCode) {
         if (smsCode == null || smsCode.isBlank()) {
-            throw new ResponseStatusException(BAD_REQUEST, "smsCode must not be blank");
+            throw new ResponseStatusException(BAD_REQUEST, "短信验证码不能为空");
         }
         boolean verified = memberVerifyCodeService.verifyRegisterOrLoginCodeAndConsume("sms", phone, smsCode.trim());
         if (!verified) {
-            throw new ResponseStatusException(BAD_REQUEST, "smsCode is invalid or expired");
+            throw new ResponseStatusException(BAD_REQUEST, "短信验证码无效或已过期");
         }
     }
 
     private void verifyEmailCode(String email, String emailCode) {
         if (emailCode == null || emailCode.isBlank()) {
-            throw new ResponseStatusException(BAD_REQUEST, "emailCode must not be blank");
+            throw new ResponseStatusException(BAD_REQUEST, "邮箱验证码不能为空");
         }
         boolean verified = memberVerifyCodeService.verifyRegisterOrLoginCodeAndConsume("email", email, emailCode.trim());
         if (!verified) {
-            throw new ResponseStatusException(BAD_REQUEST, "emailCode is invalid or expired");
+            throw new ResponseStatusException(BAD_REQUEST, "邮箱验证码无效或已过期");
         }
     }
 
     private void ensureUnique(String username, String phone, String email) {
         if (memberUserService.existsByUsername(username)) {
-            throw new ResponseStatusException(CONFLICT, "username already exists");
+            throw new ResponseStatusException(CONFLICT, "用户名已存在");
         }
         if (phone != null && memberUserService.existsByPhone(phone)) {
-            throw new ResponseStatusException(CONFLICT, "phone already exists");
+            throw new ResponseStatusException(CONFLICT, "手机号已存在");
         }
         if (email != null && memberUserService.existsByEmail(email)) {
-            throw new ResponseStatusException(CONFLICT, "email already exists");
+            throw new ResponseStatusException(CONFLICT, "邮箱已存在");
         }
     }
 
     private String normalizeGrantType(String grantType) {
         if (grantType == null || grantType.isBlank()) {
-            throw new ResponseStatusException(BAD_REQUEST, "grantType must not be blank");
+            throw new ResponseStatusException(BAD_REQUEST, "授权类型不能为空");
         }
         return grantType.trim().toLowerCase(Locale.ROOT);
     }
 
     private String requirePassword(String password) {
         if (password == null || password.isBlank()) {
-            throw new ResponseStatusException(BAD_REQUEST, "password must not be blank");
+            throw new ResponseStatusException(BAD_REQUEST, "密码不能为空");
         }
         return password;
     }
@@ -155,7 +155,7 @@ public class MemberRegisterService {
             return;
         }
         if (!password.equals(confirmPassword)) {
-            throw new ResponseStatusException(BAD_REQUEST, "confirmPassword does not match password");
+            throw new ResponseStatusException(BAD_REQUEST, "确认密码与密码不一致");
         }
     }
 

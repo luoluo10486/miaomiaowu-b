@@ -3,7 +3,7 @@ package com.personalblog.ragbackend.member.dto.auth;
 import jakarta.validation.constraints.NotBlank;
 
 public class MemberRegisterRequest {
-    @NotBlank(message = "grantType must not be blank")
+    @NotBlank(message = "授权类型不能为空")
     private String grantType;
     private String deviceType;
     private String username;

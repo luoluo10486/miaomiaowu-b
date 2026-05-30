@@ -52,7 +52,7 @@ public class SmsSendCodeStrategy implements MemberSendCodeStrategy {
     public MemberSendVerifyCodeResponse send(MemberSendVerifyCodeRequest request) {
         String phone = request.getPhone();
         if (phone == null || phone.isBlank()) {
-            throw new ResponseStatusException(BAD_REQUEST, "phone must not be blank");
+            throw new ResponseStatusException(BAD_REQUEST, "手机号不能为空");
         }
 
         String normalizedPhone = phone.trim();

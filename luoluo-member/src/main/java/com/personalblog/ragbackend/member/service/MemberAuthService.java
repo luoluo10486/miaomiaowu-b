@@ -36,7 +36,7 @@ public class MemberAuthService {
         String grantType = normalizeGrantType(request.getGrantType());
         MemberLoginStrategy strategy = strategyMap.get(grantType);
         if (strategy == null) {
-            throw new ResponseStatusException(BAD_REQUEST, "unsupported grantType: " + grantType);
+            throw new ResponseStatusException(BAD_REQUEST, "不支持的授权类型：" + grantType);
         }
 
         MemberUser user = strategy.authenticate(request);
@@ -75,7 +75,7 @@ public class MemberAuthService {
 
     private String normalizeGrantType(String grantType) {
         if (grantType == null || grantType.isBlank()) {
-            throw new ResponseStatusException(BAD_REQUEST, "grantType must not be blank");
+            throw new ResponseStatusException(BAD_REQUEST, "授权类型不能为空");
         }
         return grantType.trim().toLowerCase(Locale.ROOT);
     }

@@ -38,17 +38,17 @@ public class PasswordLoginStrategy implements MemberLoginStrategy {
         String account = resolvePasswordAccount(request);
         String password = request.getPassword();
         if (account == null || account.isBlank() || password == null || password.isBlank()) {
-            throw new ResponseStatusException(BAD_REQUEST, "username/email/phone and password must not be blank");
+            throw new ResponseStatusException(BAD_REQUEST, "用户名、邮箱或手机号和密码不能为空");
         }
 
         MemberUser user = memberUserService.findActiveByPasswordAccount(account);
         if (user == null) {
-            throw new ResponseStatusException(UNAUTHORIZED, "account or password is invalid");
+            throw new ResponseStatusException(UNAUTHORIZED, "账号或密码错误");
         }
 
         boolean matched = matchesPassword(password, user.getPasswordHash());
         if (!matched) {
-            throw new ResponseStatusException(UNAUTHORIZED, "account or password is invalid");
+            throw new ResponseStatusException(UNAUTHORIZED, "账号或密码错误");
         }
         return user;
     }

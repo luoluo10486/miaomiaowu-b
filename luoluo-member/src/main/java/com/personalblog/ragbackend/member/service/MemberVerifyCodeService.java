@@ -92,7 +92,7 @@ public class MemberVerifyCodeService {
         if (LOGIN_BIZ_TYPE.equals(normalized) || REGISTER_BIZ_TYPE.equals(normalized)) {
             return normalized;
         }
-        throw new ResponseStatusException(BAD_REQUEST, "unsupported bizType: " + bizType);
+        throw new ResponseStatusException(BAD_REQUEST, "不支持的业务类型：" + bizType);
     }
 
     private void logPlaintextVerify(String targetType, String targetValue, String inputCode, boolean passed) {
