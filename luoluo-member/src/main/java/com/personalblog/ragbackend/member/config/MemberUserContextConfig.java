@@ -8,16 +8,19 @@ import com.personalblog.ragbackend.member.service.MemberUserService;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * 将 Sa-Token 登录态映射到统一的用户上下文。
+ * Map Sa-Token login state to the shared user context.
  */
 @Configuration
 public class MemberUserContextConfig implements WebMvcConfigurer {
+    private static final Logger log = LoggerFactory.getLogger(MemberUserContextConfig.class);
     private final MemberUserService memberUserService;
 
     public MemberUserContextConfig(MemberUserService memberUserService) {
@@ -39,11 +42,14 @@ public class MemberUserContextConfig implements WebMvcConfigurer {
 
         @Override
         public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-            if (request.getDispatcherType() == DispatcherType.ASYNC || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            if (request.getDispatcherType() == DispatcherType.ASYNC
+                    || request.getDispatcherType() == DispatcherType.ERROR
+                    || request.getDispatcherType() == DispatcherType.FORWARD
+                    || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
                 return true;
             }
 
-            Long currentUserId = getCurrentUserId();
+            Long currentUserId = getCurrentUserIdSafely(request);
             if (currentUserId == null) {
                 return true;
             }
@@ -67,11 +73,19 @@ public class MemberUserContextConfig implements WebMvcConfigurer {
             UserContext.clear();
         }
 
-        private Long getCurrentUserId() {
-            Object loginId = StpUtil.getLoginIdDefaultNull();
+        private Long getCurrentUserIdSafely(HttpServletRequest request) {
+            Object loginId;
+            try {
+                loginId = StpUtil.getLoginIdDefaultNull();
+            } catch (Exception exception) {
+                log.debug("Skip user context resolve because Sa-Token context is unavailable, uri={}", request.getRequestURI(), exception);
+                return null;
+            }
+
             if (loginId == null) {
                 return null;
             }
+
             try {
                 return Long.parseLong(String.valueOf(loginId));
             } catch (NumberFormatException ignored) {
