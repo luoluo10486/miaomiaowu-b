@@ -12,3 +12,5 @@ docker/milvus/volumes/
 cde-base/
 cde-base
 /ragent/
+相关文档/
+startup-check*.log
