@@ -93,7 +93,7 @@ public class MultiChannelRetrievalEngine {
                 .collect(Collectors.toCollection(ArrayList::new));
 
         if (enabledProcessors.isEmpty()) {
-            log.warn("娌℃湁鍚敤鐨勫悗缃鐞嗗櫒锛岀洿鎺ヨ繑鍥炲師濮嬪閫氶亾缁撴灉");
+            log.warn("未启用检索后置处理器，直接返回原始检索结果");
             return chunks;
         }
 

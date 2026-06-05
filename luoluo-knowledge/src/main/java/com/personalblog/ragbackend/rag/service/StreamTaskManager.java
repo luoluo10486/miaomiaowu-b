@@ -63,9 +63,16 @@ public class StreamTaskManager {
         taskInfo.sender = sender;
         taskInfo.onCancelSupplier = onCancelSupplier;
         if (isTaskCancelledInRedis(taskId, taskInfo)) {
-            CompletionPayload payload = taskInfo.onCancelSupplier == null ? null : taskInfo.onCancelSupplier.get();
-            sendCancelAndDone(sender, payload);
-            sender.complete();
+            if (!taskInfo.terminal.compareAndSet(false, true)) {
+                return;
+            }
+            try {
+                CompletionPayload payload = taskInfo.onCancelSupplier == null ? null : taskInfo.onCancelSupplier.get();
+                sendCancelAndDone(sender, payload);
+                sender.complete();
+            } finally {
+                unregister(taskId);
+            }
         }
     }
 
@@ -83,6 +90,14 @@ public class StreamTaskManager {
     public boolean isCancelled(String taskId) {
         StreamTaskInfo info = tasks.getIfPresent(taskId);
         return info != null && info.cancelled.get();
+    }
+
+    public boolean tryMarkTerminal(String taskId) {
+        if (StrUtil.isBlank(taskId)) {
+            return false;
+        }
+        StreamTaskInfo info = tasks.getIfPresent(taskId);
+        return info != null && info.terminal.compareAndSet(false, true);
     }
 
     public void cancel(String taskId) {
@@ -126,10 +141,14 @@ public class StreamTaskManager {
         if (taskInfo.handle != null) {
             taskInfo.handle.cancel();
         }
-        if (taskInfo.sender != null) {
-            CompletionPayload payload = taskInfo.onCancelSupplier == null ? null : taskInfo.onCancelSupplier.get();
-            sendCancelAndDone(taskInfo.sender, payload);
-            taskInfo.sender.complete();
+        if (taskInfo.sender != null && taskInfo.terminal.compareAndSet(false, true)) {
+            try {
+                CompletionPayload payload = taskInfo.onCancelSupplier == null ? null : taskInfo.onCancelSupplier.get();
+                sendCancelAndDone(taskInfo.sender, payload);
+                taskInfo.sender.complete();
+            } finally {
+                unregister(taskId);
+            }
         }
     }
 
@@ -153,6 +172,7 @@ public class StreamTaskManager {
 
     private static final class StreamTaskInfo {
         private final AtomicBoolean cancelled = new AtomicBoolean(false);
+        private final AtomicBoolean terminal = new AtomicBoolean(false);
         private volatile StreamCancellationHandle handle;
         private volatile SseEmitterSender sender;
         private volatile Supplier<CompletionPayload> onCancelSupplier;

@@ -20,7 +20,7 @@ public class SseEmitterSender {
         try {
             emitter.send(SseEmitter.event().name(eventName).data(data));
         } catch (Exception exception) {
-            if (isClientDisconnected(exception)) {
+            if (isClientDisconnected(exception) || isEmitterAlreadyCompleted(exception)) {
                 return;
             }
             throw new IllegalStateException("SSE event send failed: " + eventName, exception);
@@ -62,9 +62,21 @@ public class SseEmitterSender {
                 if (normalized.contains("broken pipe")
                         || normalized.contains("connection reset")
                         || normalized.contains("software caused connection abort")
-                        || normalized.contains("已建立的连接")) {
+                        || normalized.contains("宸插缓绔嬬殑杩炴帴")) {
                     return true;
                 }
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private boolean isEmitterAlreadyCompleted(Throwable exception) {
+        Throwable current = exception;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null && message.toLowerCase().contains("already completed")) {
+                return true;
             }
             current = current.getCause();
         }

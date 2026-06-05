@@ -99,28 +99,41 @@ public class StreamChatEventHandler implements StreamCallback {
         if (taskManager.isCancelled(taskId)) {
             return;
         }
-        ConversationPersistResult result;
-        if (loginUser != null) {
-            UserContext.set(loginUser);
+        if (!taskManager.tryMarkTerminal(taskId)) {
+            return;
         }
         try {
-            result = persistAnswer();
+            ConversationPersistResult result;
+            try {
+                if (loginUser != null) {
+                    UserContext.set(loginUser);
+                }
+                result = persistAnswer();
+            } catch (Throwable error) {
+                sender.fail(error);
+                return;
+            } finally {
+                UserContext.clear();
+            }
+
+            sender.sendEvent(SseEventType.FINISH.value(), new CompletionPayload(result.assistantMessageId(), resolveTitleForEvent()));
+            sender.sendEvent(SseEventType.DONE.value(), "[DONE]");
+            sender.complete();
         } finally {
-            UserContext.clear();
+            taskManager.unregister(taskId);
         }
-        sender.sendEvent(SseEventType.FINISH.value(), new CompletionPayload(result.assistantMessageId(), resolveTitleForEvent()));
-        sender.sendEvent(SseEventType.DONE.value(), "[DONE]");
-        taskManager.unregister(taskId);
-        sender.complete();
     }
 
     @Override
     public void onError(Throwable error) {
-        if (taskManager.isCancelled(taskId)) {
+        if (taskManager.isCancelled(taskId) || !taskManager.tryMarkTerminal(taskId)) {
             return;
         }
-        taskManager.unregister(taskId);
-        sender.fail(error);
+        try {
+            sender.fail(error);
+        } finally {
+            taskManager.unregister(taskId);
+        }
     }
 
     public CompletionPayload buildCancelPayload() {

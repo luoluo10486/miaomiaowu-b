@@ -101,6 +101,20 @@ public class ThreadPoolExecutorConfig {
     }
 
     @Bean
+    public Executor chatStreamExecutor() {
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                Math.max(2, CPU_COUNT >> 1),
+                Math.max(4, CPU_COUNT),
+                60,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(200),
+                ThreadFactoryBuilder.create().setNamePrefix("chat_stream_executor_").build(),
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+        return TtlExecutors.getTtlExecutor(executor);
+    }
+
+    @Bean
     public Executor mcpBatchExecutor() {
         ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 Math.max(2, CPU_COUNT >> 1),

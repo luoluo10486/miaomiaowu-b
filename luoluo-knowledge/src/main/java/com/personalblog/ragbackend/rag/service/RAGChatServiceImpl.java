@@ -11,8 +11,11 @@ import com.personalblog.ragbackend.rag.config.RAGDefaultProperties;
 import com.personalblog.ragbackend.rag.service.pipeline.StreamChatContext;
 import com.personalblog.ragbackend.rag.service.pipeline.StreamChatPipeline;
 import com.personalblog.ragbackend.knowledge.trace.RagTraceContext;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.concurrent.Executor;
 
 @Service
 public class RAGChatServiceImpl implements RAGChatService {
@@ -22,19 +25,22 @@ public class RAGChatServiceImpl implements RAGChatService {
     private final StreamTaskManager streamTaskManager;
     private final RagConversationService ragConversationService;
     private final StreamCallbackFactory streamCallbackFactory;
+    private final Executor chatStreamExecutor;
 
     public RAGChatServiceImpl(StreamChatPipeline chatPipeline,
                               AIModelProperties aiModelProperties,
                               RAGDefaultProperties ragDefaultProperties,
                               StreamTaskManager streamTaskManager,
                               RagConversationService ragConversationService,
-                              StreamCallbackFactory streamCallbackFactory) {
+                              StreamCallbackFactory streamCallbackFactory,
+                              @Qualifier("chatStreamExecutor") Executor chatStreamExecutor) {
         this.chatPipeline = chatPipeline;
         this.aiModelProperties = aiModelProperties;
         this.ragDefaultProperties = ragDefaultProperties;
         this.streamTaskManager = streamTaskManager;
         this.ragConversationService = ragConversationService;
         this.streamCallbackFactory = streamCallbackFactory;
+        this.chatStreamExecutor = chatStreamExecutor;
     }
 
     @Override
@@ -74,16 +80,18 @@ public class RAGChatServiceImpl implements RAGChatService {
                 .callback(callback)
                 .build();
 
-        try {
-            if (loginUser != null) {
-                UserContext.set(loginUser);
+        chatStreamExecutor.execute(() -> {
+            try {
+                if (loginUser != null) {
+                    UserContext.set(loginUser);
+                }
+                chatPipeline.execute(context);
+            } catch (Throwable error) {
+                callback.onError(error);
+            } finally {
+                UserContext.clear();
             }
-            chatPipeline.execute(context);
-        } catch (Throwable error) {
-            callback.onError(error);
-        } finally {
-            UserContext.clear();
-        }
+        });
     }
 
     @Override

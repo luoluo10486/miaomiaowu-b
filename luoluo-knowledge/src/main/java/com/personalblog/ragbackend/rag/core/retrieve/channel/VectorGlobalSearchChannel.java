@@ -68,14 +68,14 @@ public class VectorGlobalSearchChannel implements SearchChannel {
         double maxScore = allScores.stream().mapToDouble(NodeScore::score).max().orElse(0D);
         double confidenceThreshold = properties.getChannels().getVectorGlobal().getConfidenceThreshold();
         if (maxScore < confidenceThreshold) {
-            log.info("鎰忓浘缃俊搴︿綆浜庨槇鍊硷紝鍚敤鍏ㄥ眬妫€绱細{}", maxScore);
+            log.info("最大意图得分低于全局检索阈值，启用全局检索补充，score={}", maxScore);
             return true;
         }
 
         double supplementThreshold = properties.getChannels().getVectorGlobal().getSingleIntentSupplementThreshold();
         boolean shouldSupplement = allScores.size() == 1 && maxScore < supplementThreshold;
         if (shouldSupplement) {
-            log.info("鍗曟剰鍥剧疆淇″害浣庝簬琛ュ厖闃堝€硷紝鍚敤鍏ㄥ眬妫€绱細{}", maxScore);
+            log.info("单意图得分低于补充阈值，启用全局检索补充，score={}", maxScore);
         }
         return shouldSupplement;
     }
@@ -94,7 +94,7 @@ public class VectorGlobalSearchChannel implements SearchChannel {
         try {
             List<String> collections = resolveCollections(context);
             if (collections.isEmpty()) {
-                log.info("鏈В鏋愬埌鍙敤鐭ヨ瘑搴撻泦鍚堬紝璺宠繃鍏ㄥ眬妫€绱?");
+                log.info("未解析到可用知识库集合，跳过全局检索");
                 return SearchChannelResult.builder()
                         .channelType(getType())
                         .channelName(getName())
@@ -114,7 +114,7 @@ public class VectorGlobalSearchChannel implements SearchChannel {
                     .metadata(java.util.Map.of("collectionCount", collections.size()))
                     .build();
         } catch (Exception exception) {
-            log.error("鍏ㄥ眬妫€绱㈤€氶亾鎵ц澶辫触", exception);
+            log.error("全局检索执行异常", exception);
             return SearchChannelResult.builder()
                     .channelType(getType())
                     .channelName(getName())
@@ -170,5 +170,3 @@ public class VectorGlobalSearchChannel implements SearchChannel {
         return "";
     }
 }
-
-
