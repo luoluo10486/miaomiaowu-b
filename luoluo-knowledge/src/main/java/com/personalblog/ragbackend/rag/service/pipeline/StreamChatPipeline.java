@@ -6,7 +6,6 @@ import com.personalblog.ragbackend.infra.chat.LLMService;
 import com.personalblog.ragbackend.infra.chat.StreamCancellationHandle;
 import com.personalblog.ragbackend.infra.convention.ChatMessage;
 import com.personalblog.ragbackend.infra.convention.ChatRequest;
-import com.personalblog.ragbackend.rag.core.prompt.PromptTemplateLoader;
 import com.personalblog.ragbackend.knowledge.trace.RagTraceNode;
 import com.personalblog.ragbackend.rag.config.SearchChannelProperties;
 import com.personalblog.ragbackend.rag.constant.RAGConstant;
@@ -18,10 +17,11 @@ import com.personalblog.ragbackend.rag.core.intent.NodeScore;
 import com.personalblog.ragbackend.rag.core.intent.SubQuestionIntent;
 import com.personalblog.ragbackend.rag.core.memory.ConversationMemoryService;
 import com.personalblog.ragbackend.rag.core.prompt.PromptContext;
+import com.personalblog.ragbackend.rag.core.prompt.PromptTemplateLoader;
 import com.personalblog.ragbackend.rag.core.prompt.RAGPromptService;
-import com.personalblog.ragbackend.rag.core.rewrite.RewriteResult;
 import com.personalblog.ragbackend.rag.core.retrieve.RetrievalContext;
 import com.personalblog.ragbackend.rag.core.retrieve.RetrievalEngine;
+import com.personalblog.ragbackend.rag.core.rewrite.RewriteResult;
 import com.personalblog.ragbackend.rag.service.StreamChatEventHandler;
 import com.personalblog.ragbackend.rag.service.StreamTaskManager;
 import org.springframework.beans.factory.ObjectProvider;
@@ -71,20 +71,21 @@ public class StreamChatPipeline {
         RagQueryPlan queryPlan = queryPipeline.prepare(ctx.getQuestion(), ctx.getHistory());
         RewriteResult rewriteResult = queryPlan.rewriteResult();
         List<SubQuestionIntent> subIntents = queryPlan.subIntents();
+        IntentGroup intentGroup = queryPlan.intentGroup();
 
         if (handleGuidance(ctx, rewriteResult, subIntents)) {
             return;
         }
-        if (handleSystemOnly(ctx, rewriteResult, subIntents, queryPlan.intentGroup())) {
+        if (handleSystemOnly(ctx, rewriteResult, subIntents, intentGroup)) {
             return;
         }
 
         RetrievalContext retrievalContext = retrieve(subIntents);
-        if (handleEmptyRetrieval(ctx, retrievalContext)) {
+        if (handleEmptyRetrieval(ctx, retrievalContext, rewriteResult, intentGroup)) {
             return;
         }
 
-        streamRagResponse(ctx, retrievalContext, queryPlan.intentGroup(), rewriteResult);
+        streamRagResponse(ctx, retrievalContext, intentGroup, rewriteResult);
     }
 
     private void loadMemory(StreamChatContext ctx) {
@@ -114,7 +115,8 @@ public class StreamChatPipeline {
                                      RewriteResult rewriteResult,
                                      List<SubQuestionIntent> subIntents,
                                      IntentGroup intentGroup) {
-        if (CollUtil.isEmpty(subIntents) || !subIntents.stream().allMatch(subQuestionIntent -> intentResolver.isSystemOnly(subQuestionIntent.nodeScores()))) {
+        if (CollUtil.isEmpty(subIntents)
+                || !subIntents.stream().allMatch(subQuestionIntent -> intentResolver.isSystemOnly(subQuestionIntent.nodeScores()))) {
             return false;
         }
 
@@ -139,11 +141,21 @@ public class StreamChatPipeline {
         return retrievalEngine.retrieve(subIntents, searchProperties.getDefaultTopK());
     }
 
-    private boolean handleEmptyRetrieval(StreamChatContext ctx, RetrievalContext retrievalContext) {
+    private boolean handleEmptyRetrieval(StreamChatContext ctx,
+                                         RetrievalContext retrievalContext,
+                                         RewriteResult rewriteResult,
+                                         IntentGroup intentGroup) {
         if (!retrievalContext.isEmpty()) {
             return false;
         }
-        emitContentAndComplete(ctx, "未检索到与问题相关的文档内容。");
+
+        streamSystemResponse(
+                rewriteResult == null ? ctx.getQuestion() : rewriteResult.rewrittenQuestion(),
+                ctx.getHistory(),
+                resolveSystemPrompt(intentGroup),
+                ctx.getCallback(),
+                ctx.getTaskId()
+        );
         return true;
     }
 
@@ -175,7 +187,10 @@ public class StreamChatPipeline {
 
         LLMService llmService = llmServiceProvider.getIfAvailable();
         if (llmService == null) {
-            emitContentAndComplete(ctx, retrievalContext.hasKb() ? retrievalContext.getKbContext() : retrievalContext.getMcpContext());
+            emitContentAndComplete(
+                    ctx,
+                    retrievalContext.hasKb() ? retrievalContext.getKbContext() : retrievalContext.getMcpContext()
+            );
             return;
         }
         StreamCancellationHandle handle = llmService.streamChat(chatRequest, ctx.getCallback());
@@ -218,10 +233,22 @@ public class StreamChatPipeline {
     }
 
     private String resolveSystemPrompt(IntentGroup intentGroup) {
-        if (intentGroup == null || CollUtil.isEmpty(intentGroup.kbIntents())) {
+        if (intentGroup == null) {
             return "";
         }
-        return intentGroup.kbIntents().stream()
+
+        List<NodeScore> candidates = new ArrayList<>();
+        if (CollUtil.isNotEmpty(intentGroup.kbIntents())) {
+            candidates.addAll(intentGroup.kbIntents());
+        }
+        if (CollUtil.isNotEmpty(intentGroup.mcpIntents())) {
+            candidates.addAll(intentGroup.mcpIntents());
+        }
+        if (CollUtil.isEmpty(candidates)) {
+            return "";
+        }
+
+        return candidates.stream()
                 .map(NodeScore::node)
                 .filter(node -> node != null && node.isSystem())
                 .map(node -> {
@@ -238,5 +265,3 @@ public class StreamChatPipeline {
                 .orElse("");
     }
 }
-
-
