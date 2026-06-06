@@ -5,11 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.personalblog.ragbackend.knowledge.dao.handler.JsonbTypeHandler;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@TableName("t_ingestion_pipeline_node")
+@TableName(value = "t_ingestion_pipeline_node", autoResultMap = true)
 @Data
 public class IngestionPipelineNodeDO {
     @TableId(value = "id", type = IdType.AUTO)
@@ -22,9 +23,9 @@ public class IngestionPipelineNodeDO {
     public String nodeType;
     @TableField("next_node_id")
     public String nextNodeId;
-    @TableField("settings_json")
+    @TableField(value = "settings_json", typeHandler = JsonbTypeHandler.class)
     public String settingsJson;
-    @TableField("condition_json")
+    @TableField(value = "condition_json", typeHandler = JsonbTypeHandler.class)
     public String conditionJson;
     @TableField("created_by")
     public Long createdBy;

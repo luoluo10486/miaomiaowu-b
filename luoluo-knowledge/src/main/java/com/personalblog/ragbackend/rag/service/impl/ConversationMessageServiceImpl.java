@@ -95,7 +95,13 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
                 .map(RagConversationMessageEntity::getId)
                 .map(String::valueOf)
                 .toList();
-        Map<String, Integer> votesByMessageId = feedbackService.getUserVotes(userId, assistantMessageIds);
+        Map<String, Integer> votesByMessageId;
+        try {
+            votesByMessageId = feedbackService.getUserVotes(userId, assistantMessageIds);
+        } catch (Exception ignored) {
+            votesByMessageId = Collections.emptyMap();
+        }
+        final Map<String, Integer> finalVotesByMessageId = votesByMessageId;
 
         return records.stream()
                 .map(record -> ConversationMessageVO.builder()
@@ -105,7 +111,7 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
                         .content(record.getContent())
                         .thinkingContent(record.getThinkingContent())
                         .thinkingDuration(record.getThinkingDuration())
-                        .vote(votesByMessageId.get(String.valueOf(record.getId())))
+                        .vote(finalVotesByMessageId.get(String.valueOf(record.getId())))
                         .createTime(toDate(record.getCreatedAt()))
                         .build())
                 .collect(Collectors.toList());

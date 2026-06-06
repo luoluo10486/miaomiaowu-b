@@ -11,6 +11,7 @@ import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeBaseVO;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseService;
 import com.personalblog.ragbackend.core.chunk.ChunkingMode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,12 +27,22 @@ import java.util.Arrays;
  * Knowledge base controller.
  */
 @RestController
+@Slf4j
 @RequiredArgsConstructor
 public class KnowledgeBaseController {
     private final KnowledgeBaseService knowledgeBaseService;
 
     @PostMapping("/knowledge-base")
     public Result<String> createKnowledgeBase(@RequestBody KnowledgeBaseCreateRequest request) {
+        System.out.println("[KnowledgeAPI] create endpoint entered: name=" + request.getName()
+                + ", collectionName=" + request.getCollectionName()
+                + ", embeddingModel=" + request.getEmbeddingModel());
+        log.info(
+                "Create knowledge base request received: name='{}', collectionName='{}', embeddingModel='{}'",
+                request.getName(),
+                request.getCollectionName(),
+                request.getEmbeddingModel()
+        );
         return Results.success(knowledgeBaseService.create(request));
     }
 
@@ -55,6 +66,15 @@ public class KnowledgeBaseController {
 
     @GetMapping("/knowledge-base")
     public Result<IPage<KnowledgeBaseVO>> pageQuery(KnowledgeBasePageRequest request) {
+        System.out.println("[KnowledgeAPI] page endpoint entered: current=" + request.getCurrent()
+                + ", size=" + request.getSize()
+                + ", name=" + request.getName());
+        log.info(
+                "Page knowledge base request received: current={}, size={}, name='{}'",
+                request.getCurrent(),
+                request.getSize(),
+                request.getName()
+        );
         return Results.success(knowledgeBaseService.pageQuery(request));
     }
 

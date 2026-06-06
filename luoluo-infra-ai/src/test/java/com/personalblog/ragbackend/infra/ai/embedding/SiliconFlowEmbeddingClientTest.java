@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,9 +62,9 @@ class SiliconFlowEmbeddingClientTest {
 
     private ModelTarget modelTarget() {
         AIModelProperties.ProviderConfig provider = new AIModelProperties.ProviderConfig();
-        provider.setType("openai-compatible");
-        provider.setBaseUrl("https://example.test");
+        provider.setUrl("https://example.test");
         provider.setApiKey("sk-test");
+        provider.setEndpoints(Map.of("embedding", "/v1/embeddings"));
 
         AIModelProperties.ModelCandidate candidate = new AIModelProperties.ModelCandidate();
         candidate.setId("embedding-default");

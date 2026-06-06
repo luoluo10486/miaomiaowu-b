@@ -27,24 +27,27 @@ public class MemberAuthController {
 
     @PostMapping("/login")
     public Result<MemberLoginResponse> login(@Valid @RequestBody MemberLoginRequest requestParam, HttpServletRequest servletRequest) {
-        return Results.success(memberAuthApplicationService.login(requestParam, resolveClientIp(servletRequest)));
+        return Results.success(memberAuthApplicationService.login(requestParam, resolveClientIp(servletRequest)))
+                .setMessage("login success");
     }
 
     @PostMapping("/register")
     public Result<MemberLoginResponse> register(@Valid @RequestBody MemberRegisterRequest requestParam, HttpServletRequest servletRequest) {
-        return Results.success(memberAuthApplicationService.register(requestParam, resolveClientIp(servletRequest)));
+        return Results.success(memberAuthApplicationService.register(requestParam, resolveClientIp(servletRequest)))
+                .setMessage("register success");
     }
 
     @PostMapping("/logout")
     @MemberLoginRequired
     public Result<Void> logout() {
         memberAuthApplicationService.logout();
-        return Results.success();
+        return Results.success().setMessage("logout success");
     }
 
     @PostMapping("/send-code")
     public Result<MemberSendVerifyCodeResponse> sendCode(@Valid @RequestBody MemberSendVerifyCodeRequest requestParam) {
-        return Results.success(memberAuthApplicationService.sendCode(requestParam));
+        return Results.success(memberAuthApplicationService.sendCode(requestParam))
+                .setMessage("send code success");
     }
 
     private String resolveClientIp(HttpServletRequest request) {

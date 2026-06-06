@@ -65,6 +65,13 @@ public class MemberUserService {
                 .last("limit 1"));
     }
 
+    public MemberUser findAnyAdmin() {
+        return memberUserMapper.selectOne(Wrappers.<MemberUser>lambdaQuery()
+                .eq(MemberUser::getUserType, "ADMIN")
+                .eq(MemberUser::getDeleted, 0)
+                .last("limit 1"));
+    }
+
     public boolean existsByUsername(String username) {
         if (username == null || username.isBlank()) {
             return false;

@@ -13,8 +13,6 @@ import java.time.LocalDateTime;
 public class KnowledgeDocumentChunkLogDO {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
-    @TableField("kb_id")
-    private Long kbId;
     @TableField("doc_id")
     private Long docId;
     @TableField("pipeline_id")
@@ -27,13 +25,11 @@ public class KnowledgeDocumentChunkLogDO {
     private Integer chunkCount;
     @TableField("status")
     private String status;
-    @TableField("message")
-    private String message;
     @TableField("error_message")
     private String errorMessage;
-    @TableField("started_at")
+    @TableField("start_time")
     private LocalDateTime startedAt;
-    @TableField("ended_at")
+    @TableField("end_time")
     private LocalDateTime endedAt;
     @TableField("extract_duration")
     private Long extractDuration;
@@ -45,8 +41,8 @@ public class KnowledgeDocumentChunkLogDO {
     private Long persistDuration;
     @TableField("total_duration")
     private Long totalDuration;
-    @TableField("created_at")
+    @TableField("create_time")
     private LocalDateTime createdAt;
-    @TableField("updated_at")
+    @TableField("update_time")
     private LocalDateTime updatedAt;
 }

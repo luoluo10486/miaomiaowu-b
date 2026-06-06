@@ -20,7 +20,7 @@ public class RagMessageFeedbackEntity {
     private String conversationId;
 
     @TableField("user_id")
-    private String userId;
+    private Long userId;
 
     @TableField("vote")
     private Integer vote;
@@ -65,11 +65,11 @@ public class RagMessageFeedbackEntity {
         this.conversationId = conversationId;
     }
 
-    public String getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 

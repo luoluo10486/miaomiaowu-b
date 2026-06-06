@@ -5,10 +5,11 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.personalblog.ragbackend.knowledge.dao.handler.JsonbTypeHandler;
 
 import java.time.LocalDateTime;
 
-@TableName("t_message")
+@TableName(value = "t_message", autoResultMap = true)
 public class RagConversationMessageEntity {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
@@ -31,7 +32,7 @@ public class RagConversationMessageEntity {
     @TableField("thinking_duration")
     private Integer thinkingDuration;
 
-    @TableField("metadata")
+    @TableField(value = "metadata", typeHandler = JsonbTypeHandler.class)
     private String metadata;
 
     @TableLogic

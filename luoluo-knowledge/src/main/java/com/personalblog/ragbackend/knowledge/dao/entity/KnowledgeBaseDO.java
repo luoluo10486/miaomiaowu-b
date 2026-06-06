@@ -22,10 +22,6 @@ public class KnowledgeBaseDO {
     private String collectionName;
     @TableField("embedding_model")
     private String embeddingModel;
-    @TableField("dimension")
-    private Integer dimension;
-    @TableField("metric_type")
-    private String metricType;
     @TableField("owner_user_id")
     private Long ownerUserId;
     @TableField("created_by")

@@ -94,8 +94,12 @@ public class MessageFeedbackServiceImpl implements MessageFeedbackService {
         if (StrUtil.isBlank(userId) || CollUtil.isEmpty(messageIds)) {
             return Collections.emptyMap();
         }
+        Long normalizedUserId = parseUserId(userId);
+        if (normalizedUserId == null) {
+            return Collections.emptyMap();
+        }
         return feedbackMapper.selectList(Wrappers.<RagMessageFeedbackEntity>lambdaQuery()
-                        .eq(RagMessageFeedbackEntity::getUserId, userId)
+                        .eq(RagMessageFeedbackEntity::getUserId, normalizedUserId)
                         .eq(RagMessageFeedbackEntity::getDeleted, 0)
                         .in(RagMessageFeedbackEntity::getMessageId, messageIds))
                 .stream()
@@ -119,7 +123,7 @@ public class MessageFeedbackServiceImpl implements MessageFeedbackService {
             RagMessageFeedbackEntity feedback = new RagMessageFeedbackEntity();
             feedback.setMessageId(messageId);
             feedback.setConversationId(conversationId);
-            feedback.setUserId(userId);
+            feedback.setUserId(parseRequiredUserId(userId));
             feedback.setVote(vote);
             feedback.setReason(reason);
             feedback.setComment(comment);
@@ -142,9 +146,10 @@ public class MessageFeedbackServiceImpl implements MessageFeedbackService {
     }
 
     private RagConversationMessageEntity loadAssistantMessage(String messageId, String userId) {
+        Long normalizedUserId = parseRequiredUserId(userId);
         RagConversationMessageEntity message = conversationMessageMapper.selectOne(Wrappers.<RagConversationMessageEntity>lambdaQuery()
                 .eq(RagConversationMessageEntity::getId, messageId)
-                .eq(RagConversationMessageEntity::getUserId, userId)
+                .eq(RagConversationMessageEntity::getUserId, normalizedUserId)
                 .eq(RagConversationMessageEntity::getDeleted, 0)
                 .eq(RagConversationMessageEntity::getRole, "assistant")
                 .last("limit 1"));
@@ -174,6 +179,25 @@ public class MessageFeedbackServiceImpl implements MessageFeedbackService {
         }
         if (vote != 1 && vote != -1) {
             throw new ClientException("vote must be 1 or -1");
+        }
+    }
+
+    private Long parseRequiredUserId(String userId) {
+        Long normalizedUserId = parseUserId(userId);
+        if (normalizedUserId == null) {
+            throw new ClientException("current user not found");
+        }
+        return normalizedUserId;
+    }
+
+    private Long parseUserId(String userId) {
+        if (StrUtil.isBlank(userId)) {
+            return null;
+        }
+        try {
+            return Long.valueOf(userId.trim());
+        } catch (NumberFormatException ignored) {
+            return null;
         }
     }
 }

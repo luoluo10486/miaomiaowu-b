@@ -1,6 +1,7 @@
 package com.personalblog.ragbackend.knowledge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -14,35 +15,26 @@ import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeBaseMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeDocumentMapper;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseService;
-import com.personalblog.ragbackend.knowledge.service.vector.KnowledgeVectorSpace;
-import com.personalblog.ragbackend.knowledge.service.vector.KnowledgeVectorSpaceId;
-import com.personalblog.ragbackend.knowledge.service.vector.VectorStoreAdmin;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException;
-import software.amazon.awssdk.services.s3.model.BucketAlreadyOwnedByYouException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
-    private final VectorStoreAdmin vectorStoreAdmin;
-    private final S3Client s3Client;
 
     public KnowledgeBaseServiceImpl(KnowledgeBaseMapper knowledgeBaseMapper,
-                                    KnowledgeDocumentMapper knowledgeDocumentMapper,
-                                    VectorStoreAdmin vectorStoreAdmin,
-                                    S3Client s3Client) {
+                                    KnowledgeDocumentMapper knowledgeDocumentMapper) {
         this.knowledgeBaseMapper = knowledgeBaseMapper;
         this.knowledgeDocumentMapper = knowledgeDocumentMapper;
-        this.vectorStoreAdmin = vectorStoreAdmin;
-        this.s3Client = s3Client;
     }
 
     @Override
@@ -56,33 +48,32 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         if (nameCount > 0) {
             throw new IllegalArgumentException("knowledge base name already exists");
         }
-        String collectionName = requireText(requestParam.getCollectionName(), "collection name is required");
+        String collectionName = resolveCollectionName(name, requestParam.getCollectionName());
+        String embeddingModel = StringUtils.hasText(requestParam.getEmbeddingModel())
+                ? requestParam.getEmbeddingModel().trim()
+                : "Qwen/Qwen3-Embedding-8B";
+        log.info("Creating knowledge base: name='{}', collection='{}', embedding='{}'", name, collectionName, embeddingModel);
         assertCollectionAvailable(collectionName, null);
 
         KnowledgeBaseDO entity = new KnowledgeBaseDO();
-        entity.setName(requestParam.getName());
-        entity.setEmbeddingModel(StringUtils.hasText(requestParam.getEmbeddingModel())
-                ? requestParam.getEmbeddingModel().trim()
-                : "Qwen/Qwen3-Embedding-8B");
+        entity.setName(name);
+        entity.setEmbeddingModel(embeddingModel);
         entity.setCollectionName(collectionName);
         entity.setOwnerUserId(parseUserId(UserContext.getUserId()));
         entity.setCreatedBy(parseUserId(UserContext.getUserId()));
         entity.setUpdatedBy(parseUserId(UserContext.getUserId()));
         entity.setDeleted(0);
-        knowledgeBaseMapper.insert(entity);
         try {
-            s3Client.createBucket(builder -> builder.bucket(collectionName));
-        } catch (BucketAlreadyOwnedByYouException | BucketAlreadyExistsException exception) {
-            throw new IllegalArgumentException("collection name already exists");
+            knowledgeBaseMapper.insert(entity);
+            log.info("Knowledge base inserted: id={}, collection='{}'", entity.getId(), collectionName);
+            log.info("Knowledge base created successfully: id={}, collection='{}', embedding='{}'",
+                    entity.getId(), collectionName, entity.getEmbeddingModel());
+            return String.valueOf(entity.getId());
+        } catch (RuntimeException exception) {
+            log.error("Failed to create knowledge base: name='{}', collection='{}', embedding='{}'",
+                    name, collectionName, embeddingModel, exception);
+            throw exception;
         }
-        vectorStoreAdmin.ensureVectorSpace(new KnowledgeVectorSpace(
-                new KnowledgeVectorSpaceId(collectionName, "public"),
-                collectionName,
-                "pg",
-                entity.getEmbeddingModel(),
-                1536
-        ));
-        return String.valueOf(entity.getId());
     }
 
     @Override
@@ -145,7 +136,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                 .eq(KnowledgeDocumentDO::getKbId, entity.getId())
                 .eq(KnowledgeDocumentDO::getDeleted, 0));
         if (documentCount > 0) {
-            throw new IllegalArgumentException("knowledge base still has documents");
+            throw new IllegalArgumentException("该知识库下还有文档，请先删除文档后再删除知识库");
         }
         knowledgeBaseMapper.deleteById(entity.getId());
     }
@@ -220,6 +211,25 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         if (existing != null && !existing.getId().equals(currentKbId)) {
             throw new IllegalArgumentException("collection name already exists");
         }
+    }
+
+    private String resolveCollectionName(String name, String requestedCollectionName) {
+        if (StringUtils.hasText(requestedCollectionName)) {
+            return requestedCollectionName.trim();
+        }
+
+        String normalizedName = name.trim().toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "_")
+                .replaceAll("_+", "_")
+                .replaceAll("^_|_$", "");
+        String suffix = IdUtil.getSnowflakeNextIdStr();
+        if (!StringUtils.hasText(normalizedName)) {
+            return "kb_" + suffix;
+        }
+        if (normalizedName.length() > 80) {
+            normalizedName = normalizedName.substring(0, 80);
+        }
+        return "kb_" + normalizedName + "_" + suffix;
     }
 
     private Long parseUserId(String userId) {

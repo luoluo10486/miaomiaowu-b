@@ -19,9 +19,9 @@ public class KnowledgeDocumentScheduleExecDO {
     private Long docId;
     @TableField("status")
     private String status;
-    @TableField("started_at")
+    @TableField("start_time")
     private LocalDateTime startedAt;
-    @TableField("completed_at")
+    @TableField("end_time")
     private LocalDateTime endedAt;
     @TableField("message")
     private String message;

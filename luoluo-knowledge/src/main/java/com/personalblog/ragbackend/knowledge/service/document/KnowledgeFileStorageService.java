@@ -1,6 +1,8 @@
 package com.personalblog.ragbackend.knowledge.service.document;
 
+import com.personalblog.ragbackend.framework.exception.ObjectStorageException;
 import com.personalblog.ragbackend.knowledge.config.RustfsProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -10,7 +12,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -19,10 +20,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class KnowledgeFileStorageService {
     private static final Tika TIKA = new Tika();
     private final S3Client s3Client;
@@ -38,21 +42,68 @@ public class KnowledgeFileStorageService {
         if (file == null || file.isEmpty()) {
             return null;
         }
+
+        String bucketName = resolveBucketName(collectionName);
+        String originalFilename = file.getOriginalFilename();
+        String key = buildObjectKey(docName, originalFilename);
+        String contentType = resolveContentType(file);
+        long size = file.getSize();
+
+        log.info(
+                "Storing knowledge file: collection='{}', bucket='{}', endpoint='{}', key='{}', filename='{}', size={}, contentType='{}'",
+                collectionName,
+                bucketName,
+                rustfsProperties.getUrl(),
+                key,
+                originalFilename,
+                size,
+                contentType
+        );
+
         try {
-            String bucketName = resolveBucketName(collectionName);
             ensureBucketExists(bucketName);
-            String key = buildObjectKey(docName, file.getOriginalFilename());
-            String contentType = resolveContentType(file);
             try (InputStream inputStream = file.getInputStream()) {
                 s3Client.putObject(builder -> builder
                                 .bucket(bucketName)
                                 .key(key)
                                 .contentType(contentType),
-                        RequestBody.fromInputStream(inputStream, file.getSize()));
+                        RequestBody.fromInputStream(inputStream, size));
             }
-            return toS3Url(bucketName, key);
+            String url = toS3Url(bucketName, key);
+            log.info("Knowledge file stored successfully: bucket='{}', key='{}', url='{}'", bucketName, key, url);
+            return url;
+        } catch (ObjectStorageException exception) {
+            log.error(
+                    "Object storage error while storing knowledge file: collection='{}', bucket='{}', key='{}', filename='{}'",
+                    collectionName,
+                    bucketName,
+                    key,
+                    originalFilename,
+                    exception
+            );
+            throw exception;
         } catch (IOException exception) {
+            log.error(
+                    "Failed to store knowledge file: collection='{}', bucket='{}', key='{}', filename='{}'",
+                    collectionName,
+                    bucketName,
+                    key,
+                    originalFilename,
+                    exception
+            );
             throw new IllegalStateException("Failed to store knowledge file", exception);
+        } catch (S3Exception exception) {
+            log.error(
+                    "Object storage error while storing knowledge file: collection='{}', bucket='{}', key='{}', filename='{}', status={}, message={}",
+                    collectionName,
+                    bucketName,
+                    key,
+                    originalFilename,
+                    exception.statusCode(),
+                    exception.getMessage(),
+                    exception
+            );
+            throw new ObjectStorageException("Failed to store knowledge file in object storage", exception);
         }
     }
 
@@ -98,27 +149,55 @@ public class KnowledgeFileStorageService {
     }
 
     public String resolveBucketName(String collectionName) {
-        if (StringUtils.hasText(collectionName)) {
-            return collectionName.trim();
+        String source = StringUtils.hasText(collectionName) ? collectionName.trim() : "rag_default_store";
+        String normalized = source.toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9-]+", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "");
+        if (!StringUtils.hasText(normalized)) {
+            normalized = "rag-default-store";
         }
-        return "rag_default_store";
+
+        String hash = shortHash(source);
+        String prefix = "kb";
+        int maxNormalizedLength = Math.max(1, 63 - prefix.length() - hash.length() - 2);
+        if (normalized.length() > maxNormalizedLength) {
+            normalized = normalized.substring(0, maxNormalizedLength).replaceAll("-+$", "");
+            if (!StringUtils.hasText(normalized)) {
+                normalized = "store";
+            }
+        }
+        return prefix + "-" + normalized + "-" + hash;
     }
 
     public void ensureBucketExists(String bucketName) {
         validateBucketName(bucketName);
         try {
-            s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
+            log.info("Ensuring knowledge file bucket exists: bucket='{}', endpoint='{}'", bucketName, rustfsProperties.getUrl());
+            s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
+            log.info("Knowledge file bucket created or already available: bucket='{}'", bucketName);
         } catch (S3Exception exception) {
-            if (exception.statusCode() != 404) {
-                throw exception;
+            if (exception.statusCode() == 409) {
+                log.info("Knowledge file bucket already exists: bucket='{}'", bucketName);
+                return;
             }
-            try {
-                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
-            } catch (S3Exception createException) {
-                if (createException.statusCode() != 409) {
-                    throw createException;
-                }
-            }
+            log.error(
+                    "Failed to ensure knowledge file bucket exists: bucket='{}', endpoint='{}', status={}, message={}",
+                    bucketName,
+                    rustfsProperties.getUrl(),
+                    exception.statusCode(),
+                    exception.getMessage(),
+                    exception
+            );
+            throw new ObjectStorageException("Failed to ensure knowledge file bucket exists: " + bucketName, exception);
+        } catch (RuntimeException exception) {
+            log.error(
+                    "Unexpected error while ensuring knowledge file bucket exists: bucket='{}', endpoint='{}'",
+                    bucketName,
+                    rustfsProperties.getUrl(),
+                    exception
+            );
+            throw new ObjectStorageException("Failed to ensure knowledge file bucket exists: " + bucketName, exception);
         }
     }
 
@@ -175,7 +254,22 @@ public class KnowledgeFileStorageService {
         }
     }
 
-    private record S3Location(String bucket, String key) {
+    private String shortHash(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] bytes = digest.digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder(12);
+            for (int i = 0; i < 6 && i < bytes.length; i++) {
+                String hex = Integer.toHexString(Byte.toUnsignedInt(bytes[i]));
+                if (hex.length() == 1) {
+                    builder.append('0');
+                }
+                builder.append(hex);
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Failed to hash bucket name", exception);
+        }
     }
 
     private final class S3RestoredMultipartFile implements MultipartFile {
@@ -305,4 +399,8 @@ public class KnowledgeFileStorageService {
             Files.copy(path, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
+
+    private record S3Location(String bucket, String key) {
+    }
 }
+

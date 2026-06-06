@@ -113,7 +113,9 @@ public class BaiLianRerankClient implements RerankClient {
             }
             RetrievedChunk source = candidates.get(index);
             Float score = item.path("relevance_score").isMissingNode() ? null : (float) item.path("relevance_score").asDouble();
-            reranked.add(score == null ? source : new RetrievedChunk(source.getId(), source.getText(), score));
+            reranked.add(score == null
+                    ? source
+                    : new RetrievedChunk(source.getId(), source.getText(), score, source.getMetadata()));
             addedIds.add(source.getId());
             if (reranked.size() >= topN) {
                 break;

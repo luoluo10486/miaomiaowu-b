@@ -65,6 +65,9 @@ public class KnowledgeVectorSpaceResolver {
     }
 
     private String resolveCollectionName(String normalizedBaseCode) {
+        if ("default".equals(normalizedBaseCode)) {
+            return ragDefaultProperties.getCollectionName();
+        }
         if (ragDefaultProperties.getCollectionName() != null && ragDefaultProperties.getCollectionName().equals(normalizedBaseCode)) {
             return ragDefaultProperties.getCollectionName();
         }

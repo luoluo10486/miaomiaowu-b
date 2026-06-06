@@ -5,11 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.personalblog.ragbackend.knowledge.dao.handler.JsonbTypeHandler;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@TableName("t_knowledge_chunk")
+@TableName(value = "t_knowledge_chunk", autoResultMap = true)
 @Data
 public class KnowledgeChunkDO {
     @TableId(value = "id", type = IdType.AUTO)
@@ -30,9 +31,9 @@ public class KnowledgeChunkDO {
     private Integer tokenCount;
     @TableField("enabled")
     private Integer enabled;
-    @TableField("vector_id")
+    @TableField(exist = false)
     private String vectorId;
-    @TableField("metadata_json")
+    @TableField(value = "metadata", typeHandler = JsonbTypeHandler.class)
     private String metadata;
     @TableField("created_by")
     private Long createdBy;

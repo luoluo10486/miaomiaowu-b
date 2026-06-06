@@ -8,8 +8,10 @@ public class RAGConstant {
 
     public static final String CHAT_SYSTEM_PROMPT_PATH = "prompt/answer-chat-system.st";
     public static final String RAG_ENTERPRISE_PROMPT_PATH = "prompt/answer-chat-kb.st";
+    public static final String RAG_ANSWER_CONTRACT_PROMPT_PATH = "prompt/rag-answer-contract.st";
     public static final String MCP_ONLY_PROMPT_PATH = "prompt/answer-chat-mcp.st";
     public static final String MCP_KB_MIXED_PROMPT_PATH = "prompt/answer-chat-mcp-kb-mixed.st";
+    public static final String NO_RETRIEVAL_RESPONSE = "未检索到与问题相关的文档内容。";
     public static final String GUIDANCE_PROMPT_PATH = "prompt/guidance-prompt.st";
     public static final String GUIDANCE_AMBIGUITY_CHECK_PROMPT_PATH = "prompt/guidance-ambiguity-check.st";
     public static final String QUERY_REWRITE_AND_SPLIT_PROMPT_PATH = "prompt/user-question-rewrite.st";

@@ -24,6 +24,7 @@ import com.personalblog.ragbackend.rag.core.retrieve.RetrievalEngine;
 import com.personalblog.ragbackend.rag.core.rewrite.RewriteResult;
 import com.personalblog.ragbackend.rag.service.StreamChatEventHandler;
 import com.personalblog.ragbackend.rag.service.StreamTaskManager;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
 public class StreamChatPipeline {
     private final SearchChannelProperties searchProperties;
     private final ConversationMemoryService memoryService;
@@ -149,13 +151,11 @@ public class StreamChatPipeline {
             return false;
         }
 
-        streamSystemResponse(
-                rewriteResult == null ? ctx.getQuestion() : rewriteResult.rewrittenQuestion(),
-                ctx.getHistory(),
-                resolveSystemPrompt(intentGroup),
-                ctx.getCallback(),
-                ctx.getTaskId()
-        );
+        log.warn("No retrieval hits for conversation={}, taskId={}, question='{}'",
+                ctx.getConversationId(),
+                ctx.getTaskId(),
+                StrUtil.blankToDefault(ctx.getQuestion(), ""));
+        emitNoRetrievalResponse(ctx);
         return true;
     }
 
@@ -171,6 +171,19 @@ public class StreamChatPipeline {
                 .kbIntents(mergedGroup == null ? List.of() : mergedGroup.kbIntents())
                 .intentChunks(retrievalContext.getIntentChunks())
                 .build();
+
+        int citationCount = retrievalContext.getIntentChunks() == null
+                ? 0
+                : retrievalContext.getIntentChunks().values().stream()
+                        .filter(CollUtil::isNotEmpty)
+                        .mapToInt(List::size)
+                        .sum();
+        log.info("Streaming RAG response for conversation={}, taskId={}, kbHits={}, mcpHits={}, citationCount={}",
+                ctx.getConversationId(),
+                ctx.getTaskId(),
+                retrievalContext.hasKb(),
+                retrievalContext.hasMcp(),
+                citationCount);
 
         List<ChatMessage> messages = promptBuilder.buildStructuredMessages(
                 promptContext,
@@ -195,6 +208,12 @@ public class StreamChatPipeline {
         }
         StreamCancellationHandle handle = llmService.streamChat(chatRequest, ctx.getCallback());
         taskManager.bindHandle(ctx.getTaskId(), handle);
+    }
+
+    private void emitNoRetrievalResponse(StreamChatContext ctx) {
+        StreamChatEventHandler callback = ctx.getCallback();
+        callback.onContent(RAGConstant.NO_RETRIEVAL_RESPONSE);
+        callback.onComplete();
     }
 
     private void streamSystemResponse(String question,

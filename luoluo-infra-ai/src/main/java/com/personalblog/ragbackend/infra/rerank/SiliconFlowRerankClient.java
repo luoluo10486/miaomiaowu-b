@@ -98,7 +98,7 @@ public class SiliconFlowRerankClient implements RerankClient {
             }
             RetrievedChunk source = candidates.get(index);
             float score = (float) item.path("relevance_score").asDouble(0D);
-            ranked.add(new RetrievedChunk(source.getId(), source.getText(), score));
+            ranked.add(new RetrievedChunk(source.getId(), source.getText(), score, source.getMetadata()));
         }
         ranked.sort(Comparator.comparing(RetrievedChunk::getScore, Comparator.nullsLast(Float::compareTo)).reversed());
         return ranked;

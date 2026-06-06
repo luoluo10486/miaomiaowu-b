@@ -1,5 +1,6 @@
 package com.personalblog.ragbackend.rag.controller;
 
+import com.personalblog.ragbackend.common.satoken.annotation.MemberLoginRequired;
 import com.personalblog.ragbackend.common.web.domain.Result;
 import com.personalblog.ragbackend.common.web.domain.Results;
 import com.personalblog.ragbackend.framework.idempotent.IdempotentSubmit;
@@ -25,6 +26,7 @@ public class RAGChatController {
             key = "T(com.personalblog.ragbackend.common.context.UserContext).getUserId()",
             message = "当前会话处理中，请稍后再发起新的对话"
     )
+    @MemberLoginRequired
     @GetMapping(value = "/rag/v3/chat", produces = "text/event-stream;charset=UTF-8")
     public SseEmitter chat(@RequestParam String question,
                            @RequestParam(required = false) String conversationId,
@@ -35,6 +37,7 @@ public class RAGChatController {
     }
 
     @IdempotentSubmit
+    @MemberLoginRequired
     @PostMapping("/rag/v3/stop")
     public Result<Void> stop(@RequestParam String taskId) {
         ragChatService.stopTask(taskId);

@@ -3,6 +3,19 @@
 {chunks_body}
 </content>
 
+--- section: kb-citation-item ---
+<citation index="{index}">
+<title>{title}</title>
+<source_url>{source_url}</source_url>
+<chunk_index>{chunk_index}</chunk_index>
+<score>{score}</score>
+</citation>
+
+--- section: kb-citations ---
+<citations>
+{items}
+</citations>
+
 --- section: snippet-rules ---
 <rules>
 {rules}

@@ -52,6 +52,16 @@ spring:
       database: 0
       timeout: 3s
 
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: 2592000
+  is-concurrent: true
+  is-share: false
+  token-style: simple-uuid
+  is-log: false
+  is-print: false
+
 rocketmq:
   name-server: 127.0.0.1:9876
   producer:
@@ -190,6 +200,13 @@ rag:
 app:
   demo-mode: false
   member:
+    bootstrap:
+      admin:
+        enabled: true
+        username: admin
+        password: admin123456
+        display-name: Admin
+        email: admin@example.com
     auth:
       session-ttl-seconds: 86400
       verify-code-ttl-seconds: 120
@@ -265,14 +282,16 @@ app:
       max-error-length: 1000
     providers:
       - id: siliconflow
-        url: https://api.siliconflow.cn
+        type: siliconflow
+        baseUrl: https://api.siliconflow.cn
         api-key: ${SILICONFLOW_API_KEY:}
         endpoints:
           chat: /v1/chat/completions
           embedding: /v1/embeddings
           rerank: /v1/rerank
       - id: ollama
-        url: http://localhost:11434
+        type: ollama
+        baseUrl: http://localhost:11434
         endpoints:
           chat: /v1/chat/completions
           embedding: /api/embed

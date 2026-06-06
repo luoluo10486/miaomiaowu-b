@@ -1,6 +1,7 @@
 package com.personalblog.ragbackend.rag.controller;
 
 import com.personalblog.ragbackend.common.context.UserContext;
+import com.personalblog.ragbackend.common.satoken.annotation.MemberLoginRequired;
 import com.personalblog.ragbackend.common.web.domain.Result;
 import com.personalblog.ragbackend.common.web.domain.Results;
 import com.personalblog.ragbackend.rag.controller.request.ConversationUpdateRequest;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@MemberLoginRequired
 public class ConversationController {
     private final ConversationService conversationService;
     private final ConversationMessageService conversationMessageService;

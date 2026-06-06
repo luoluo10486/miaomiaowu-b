@@ -5,11 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.personalblog.ragbackend.knowledge.dao.handler.JsonbTypeHandler;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@TableName("t_ingestion_task")
+@TableName(value = "t_ingestion_task", autoResultMap = true)
 @Data
 public class IngestionTaskDO {
     @TableId(value = "id", type = IdType.AUTO)
@@ -32,9 +33,9 @@ public class IngestionTaskDO {
     public Integer chunkCount;
     @TableField("error_message")
     public String errorMessage;
-    @TableField("logs_json")
+    @TableField(value = "logs_json", typeHandler = JsonbTypeHandler.class)
     public String logsJson;
-    @TableField("metadata_json")
+    @TableField(value = "metadata_json", typeHandler = JsonbTypeHandler.class)
     public String metadataJson;
     @TableField("started_at")
     public LocalDateTime startedAt;

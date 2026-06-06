@@ -5,10 +5,11 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.personalblog.ragbackend.knowledge.dao.handler.JsonbTypeHandler;
 
 import java.time.LocalDateTime;
 
-@TableName("t_rag_trace_node")
+@TableName(value = "t_rag_trace_node", autoResultMap = true)
 public class RagTraceNodeEntity {
     @TableId(value = "id", type = IdType.AUTO)
     public Long id;
@@ -38,7 +39,7 @@ public class RagTraceNodeEntity {
     public LocalDateTime endedAt;
     @TableField("duration_ms")
     public Long durationMs;
-    @TableField("extra_data")
+    @TableField(value = "extra_data", typeHandler = JsonbTypeHandler.class)
     public String extraData;
     @TableLogic
     @TableField("deleted")

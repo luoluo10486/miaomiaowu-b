@@ -44,9 +44,9 @@ public class IntentNodeEntity {
     public Integer sortOrder;
     @TableField("enabled")
     public Integer enabled;
-    @TableField("create_by")
+    @TableField("created_by")
     public String createBy;
-    @TableField("update_by")
+    @TableField("updated_by")
     public String updateBy;
     @TableLogic
     @TableField("deleted")

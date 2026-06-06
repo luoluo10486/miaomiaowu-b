@@ -23,7 +23,6 @@ import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentChunkLo
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeChunkDO;
 import com.personalblog.ragbackend.ingestion.dao.entity.IngestionPipelineDO;
-import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeVectorRefDO;
 import com.personalblog.ragbackend.knowledge.dto.document.DocumentChunk;
 import com.personalblog.ragbackend.knowledge.dto.document.DocumentChunkResponse;
 import com.personalblog.ragbackend.knowledge.dto.document.ParseResult;
@@ -39,7 +38,6 @@ import com.personalblog.ragbackend.knowledge.mapper.KnowledgeChunkMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeDocumentChunkLogMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeDocumentMapper;
 import com.personalblog.ragbackend.ingestion.dao.mapper.IngestionPipelineMapper;
-import com.personalblog.ragbackend.knowledge.mapper.KnowledgeVectorRefMapper;
 import com.personalblog.ragbackend.knowledge.mq.MessageWrapper;
 import com.personalblog.ragbackend.knowledge.mq.event.KnowledgeDocumentChunkEvent;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeDocumentScheduleService;
@@ -97,7 +95,6 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final KnowledgeChunkMapper knowledgeChunkMapper;
-    private final KnowledgeVectorRefMapper knowledgeVectorRefMapper;
     private final KnowledgeDocumentChunkLogMapper knowledgeDocumentChunkLogMapper;
     private final IngestionPipelineMapper ingestionPipelineMapper;
     private final KnowledgeScheduleProperties scheduleProperties;
@@ -120,7 +117,6 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     public KnowledgeDocumentServiceImpl(KnowledgeBaseMapper knowledgeBaseMapper,
                                         KnowledgeDocumentMapper knowledgeDocumentMapper,
                                         KnowledgeChunkMapper knowledgeChunkMapper,
-                                        KnowledgeVectorRefMapper knowledgeVectorRefMapper,
                                         KnowledgeDocumentChunkLogMapper knowledgeDocumentChunkLogMapper,
                                         IngestionPipelineMapper ingestionPipelineMapper,
                                         KnowledgeScheduleProperties scheduleProperties,
@@ -142,7 +138,6 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         this.knowledgeBaseMapper = knowledgeBaseMapper;
         this.knowledgeDocumentMapper = knowledgeDocumentMapper;
         this.knowledgeChunkMapper = knowledgeChunkMapper;
-        this.knowledgeVectorRefMapper = knowledgeVectorRefMapper;
         this.knowledgeDocumentChunkLogMapper = knowledgeDocumentChunkLogMapper;
         this.ingestionPipelineMapper = ingestionPipelineMapper;
         this.scheduleProperties = scheduleProperties;
@@ -174,6 +169,18 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             throw new IllegalArgumentException("file is required");
         }
         ProcessMode processMode = normalizeProcessMode(requestParam.getProcessMode());
+        log.info(
+                "Uploading knowledge document: kbId={}, kbName='{}', collection='{}', sourceType='{}', processMode='{}', filename='{}', fileSize={}, pipelineId='{}', chunkStrategy='{}'",
+                knowledgeBase.getId(),
+                knowledgeBase.getName(),
+                knowledgeBase.getCollectionName(),
+                sourceType.getValue(),
+                processMode.getValue(),
+                file == null ? null : file.getOriginalFilename(),
+                file == null ? null : file.getSize(),
+                requestParam.getPipelineId(),
+                requestParam.getChunkStrategy()
+        );
         String chunkStrategy = null;
         String chunkConfig = null;
         Long pipelineId = null;
@@ -187,7 +194,22 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             chunkStrategy = normalizeChunkStrategy(requestParam.getChunkStrategy());
             chunkConfig = blankToNull(requestParam.getChunkConfig());
         }
-        StoredFileDTO storedFile = storeUploadedFile(knowledgeBase.getCollectionName(), requestParam, file);
+        StoredFileDTO storedFile;
+        try {
+            storedFile = storeUploadedFile(knowledgeBase.getCollectionName(), requestParam, file);
+        } catch (RuntimeException exception) {
+            log.error(
+                    "Failed to store uploaded knowledge document: kbId={}, kbName='{}', collection='{}', sourceType='{}', processMode='{}', filename='{}'",
+                    knowledgeBase.getId(),
+                    knowledgeBase.getName(),
+                    knowledgeBase.getCollectionName(),
+                    sourceType.getValue(),
+                    processMode.getValue(),
+                    file == null ? null : file.getOriginalFilename(),
+                    exception
+            );
+            throw exception;
+        }
         KnowledgeDocumentDO entity = new KnowledgeDocumentDO();
         entity.setKbId(knowledgeBase.getId());
         entity.setDocName(StringUtils.hasText(storedFile.getOriginalFilename()) ? storedFile.getOriginalFilename() : resolveDocName(file));
@@ -209,7 +231,38 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         entity.setPipelineId(pipelineId);
         entity.setCreatedBy(parseUserId(UserContext.getUserId()));
         entity.setUpdatedBy(parseUserId(UserContext.getUserId()));
-        knowledgeDocumentMapper.insert(entity);
+        log.info(
+                "About to persist knowledge document: name='{}', sourceType='{}', processMode='{}', chunkStrategy='{}', chunkConfig='{}', pipelineId={}",
+                entity.getDocName(),
+                entity.getSourceType(),
+                entity.getProcessMode(),
+                entity.getChunkStrategy(),
+                entity.getChunkConfig(),
+                entity.getPipelineId()
+        );
+        try {
+            knowledgeDocumentMapper.insert(entity);
+        } catch (RuntimeException exception) {
+            log.error(
+                    "Failed to insert knowledge document row: kbId={}, kbName='{}', docName='{}', chunkStrategy='{}', chunkConfig='{}', pipelineId={}",
+                    knowledgeBase.getId(),
+                    knowledgeBase.getName(),
+                    entity.getDocName(),
+                    entity.getChunkStrategy(),
+                    entity.getChunkConfig(),
+                    entity.getPipelineId(),
+                    exception
+            );
+            throw exception;
+        }
+        log.info(
+                "Knowledge document uploaded successfully: kbId={}, docId={}, docName='{}', fileUrl='{}', processMode='{}'",
+                knowledgeBase.getId(),
+                entity.getId(),
+                entity.getDocName(),
+                entity.getFileUrl(),
+                entity.getProcessMode()
+        );
         return get(String.valueOf(entity.getId()));
     }
 
@@ -261,6 +314,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         String docId = String.valueOf(document.getId());
         ProcessMode processMode = normalizeProcessMode(document.getProcessMode());
         KnowledgeDocumentChunkLogDO chunkLog = insertChunkLog(document);
+        log.info("document chunk task started, docId={}, kbId={}, processMode={}, fileName={}",
+                docId, document.getKbId(), processMode, document.getDocName());
 
         long totalStartTime = System.currentTimeMillis();
         long extractDuration = 0L;
@@ -290,6 +345,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
             long totalDuration = System.currentTimeMillis() - totalStartTime;
             updateChunkLog(chunkLog.getId(), DocumentStatus.SUCCESS.getCode(), savedCount, extractDuration, chunkDuration, embedDuration, persistDuration, totalDuration, null);
+            log.info("document chunk task finished, docId={}, kbId={}, chunkCount={}, extractMs={}, chunkMs={}, embedMs={}, persistMs={}, totalMs={}",
+                    docId, document.getKbId(), savedCount, extractDuration, chunkDuration, embedDuration, persistDuration, totalDuration);
         } catch (Exception exception) {
             log.error("document chunk task failed, docId={}", docId, exception);
             markChunkFailed(document.getId());
@@ -612,7 +669,6 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             deleteDocumentVectors(document);
         } else if (finalVectorDocuments != null && !finalVectorDocuments.isEmpty()) {
             vectorStoreService.indexDocumentChunks(knowledgeBase.getCollectionName(), String.valueOf(document.getId()), finalVectorDocuments);
-            upsertVectorRefs(document, knowledgeBase, chunks);
         }
         knowledgeDocumentScheduleService.syncScheduleIfExists(document);
     }
@@ -680,8 +736,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             vo.setDocId(String.valueOf(each.getDocId()));
             vo.setPipelineId(each.getPipelineId() == null ? null : String.valueOf(each.getPipelineId()));
             vo.setDurationMs(each.getTotalDuration());
-            vo.setMessage(each.getMessage());
-            vo.setRemark(StringUtils.hasText(each.getMessage()) ? each.getMessage() : each.getErrorMessage());
+            vo.setMessage(each.getErrorMessage());
+            vo.setRemark(each.getErrorMessage());
             if (each.getPipelineId() != null) {
                 vo.setPipelineName(pipelineNameMap.get(each.getPipelineId()));
             }
@@ -720,8 +776,6 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private void deleteDocumentVectors(KnowledgeDocumentDO document) {
         KnowledgeBaseDO knowledgeBase = requireKnowledgeBase(document.getKbId());
         vectorStoreService.deleteDocumentVectors(knowledgeBase.getCollectionName(), String.valueOf(document.getId()));
-        knowledgeVectorRefMapper.delete(new LambdaQueryWrapper<KnowledgeVectorRefDO>()
-                .eq(KnowledgeVectorRefDO::getDocId, document.getId()));
     }
 
     private List<VectorChunk> buildVectorChunks(KnowledgeDocumentDO document,
@@ -850,12 +904,14 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                                                   List<VectorChunk> chunkResults) {
         KnowledgeBaseDO knowledgeBase = requireKnowledgeBase(document.getKbId());
         List<VectorChunk> safeChunks = chunkResults == null ? List.of() : chunkResults;
+        log.info("persisting document chunks and vectors, docId={}, kbId={}, chunkCount={}, collection={}",
+                document.getId(), document.getKbId(), safeChunks.size(), knowledgeBase.getCollectionName());
         transactionOperations.executeWithoutResult(status -> {
+            log.info("cleaning old chunk data, docId={}", document.getId());
             knowledgeChunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunkDO>()
                     .eq(KnowledgeChunkDO::getDocId, document.getId()));
-            knowledgeVectorRefMapper.delete(new LambdaQueryWrapper<KnowledgeVectorRefDO>()
-                    .eq(KnowledgeVectorRefDO::getDocId, document.getId()));
 
+            log.info("cleaning old pg vectors, docId={}, collection={}", document.getId(), knowledgeBase.getCollectionName());
             vectorStoreService.deleteDocumentVectors(knowledgeBase.getCollectionName(), String.valueOf(document.getId()));
 
             List<KnowledgeChunkDO> persistedChunks = new ArrayList<>(safeChunks.size());
@@ -878,41 +934,17 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             }
 
             if (!safeChunks.isEmpty()) {
+                log.info("indexing vectors, docId={}, collection={}, chunkCount={}", document.getId(), knowledgeBase.getCollectionName(), safeChunks.size());
                 vectorStoreService.indexDocumentChunks(knowledgeBase.getCollectionName(), String.valueOf(document.getId()), safeChunks);
-                insertVectorRefs(document, knowledgeBase, persistedChunks, safeChunks);
             }
 
             document.setChunkCount(safeChunks.size());
             document.setStatus(DocumentStatus.SUCCESS.getCode());
             document.setUpdatedBy(parseUserId(UserContext.getUserId()));
             knowledgeDocumentMapper.updateById(document);
+            log.info("document chunk persistence done, docId={}, chunkCount={}", document.getId(), safeChunks.size());
         });
         return safeChunks.size();
-    }
-
-    private void insertVectorRefs(KnowledgeDocumentDO document,
-                                  KnowledgeBaseDO knowledgeBase,
-                                  List<KnowledgeChunkDO> persistedChunks,
-                                  List<VectorChunk> vectorChunks) {
-        if (persistedChunks == null || persistedChunks.isEmpty()) {
-            return;
-        }
-        int embeddingDim = vectorSpaceResolver.resolve(String.valueOf(knowledgeBase.getId())).dimension();
-        for (int index = 0; index < persistedChunks.size(); index++) {
-            KnowledgeChunkDO chunkEntity = persistedChunks.get(index);
-            VectorChunk vectorChunk = vectorChunks.get(index);
-            KnowledgeVectorRefDO entity = new KnowledgeVectorRefDO();
-            entity.setKbId(document.getKbId());
-            entity.setDocId(document.getId());
-            entity.setChunkId(chunkEntity.getId());
-            entity.setCollectionName(knowledgeBase.getCollectionName());
-            entity.setVectorId(String.valueOf(chunkEntity.getId()));
-            entity.setEmbeddingModel(knowledgeBase.getEmbeddingModel());
-            entity.setEmbeddingDim(embeddingDim);
-            entity.setMetadata(toJson(vectorChunk.getMetadata()));
-            entity.setCreatedBy(parseUserId(UserContext.getUserId()));
-            knowledgeVectorRefMapper.insert(entity);
-        }
     }
 
     private Map<String, Object> buildVectorMetadata(KnowledgeDocumentDO document, DocumentChunk chunk) {
@@ -934,28 +966,6 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         metadata.put("contentLength", chunk.contentLength());
         metadata.put("overlapFromPrevious", chunk.overlapFromPrevious());
         return metadata;
-    }
-
-    private void upsertVectorRefs(KnowledgeDocumentDO document,
-                                  KnowledgeBaseDO knowledgeBase,
-                                  List<KnowledgeChunkVO> chunks) {
-        if (chunks == null || chunks.isEmpty()) {
-            return;
-        }
-        int embeddingDim = vectorSpaceResolver.resolve(String.valueOf(knowledgeBase.getId())).dimension();
-        for (KnowledgeChunkVO chunk : chunks) {
-            KnowledgeVectorRefDO entity = new KnowledgeVectorRefDO();
-            entity.setKbId(document.getKbId());
-            entity.setDocId(document.getId());
-            entity.setChunkId(parseLong(chunk.getId()));
-            entity.setCollectionName(knowledgeBase.getCollectionName());
-            entity.setVectorId(chunk.getId());
-            entity.setEmbeddingModel(knowledgeBase.getEmbeddingModel());
-            entity.setEmbeddingDim(embeddingDim);
-            entity.setMetadata(toJson(buildVectorMetadata(document, chunk)));
-            entity.setCreatedBy(parseUserId(UserContext.getUserId()));
-            knowledgeVectorRefMapper.insert(entity);
-        }
     }
 
     private Map<String, Object> buildVectorMetadata(KnowledgeDocumentDO document, KnowledgeChunkVO chunk) {
@@ -1027,6 +1037,13 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     }
 
     private StoredFileDTO storeUploadedFile(String collectionName, KnowledgeDocumentUploadRequest requestParam, MultipartFile file) {
+        log.info(
+                "Preparing to store uploaded knowledge file: collection='{}', sourceType='{}', sourceLocation='{}', filename='{}'",
+                collectionName,
+                requestParam == null ? null : requestParam.getSourceType(),
+                requestParam == null ? null : requestParam.getSourceLocation(),
+                file == null ? null : file.getOriginalFilename()
+        );
         if (requestParam != null && "url".equalsIgnoreCase(requestParam.getSourceType()) && StringUtils.hasText(requestParam.getSourceLocation())) {
             StoredFileDTO stored = remoteFileFetcher.fetchAndStore(collectionName, requestParam.getSourceLocation());
             if (stored.getOriginalFilename() == null) {
@@ -1152,4 +1169,6 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         return values;
     }
 }
+
+
 

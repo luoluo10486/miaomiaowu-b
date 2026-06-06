@@ -5,11 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.personalblog.ragbackend.knowledge.dao.handler.JsonbTypeHandler;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@TableName("t_knowledge_vector_ref")
+@TableName(value = "t_knowledge_vector_ref", autoResultMap = true)
 @Data
 public class KnowledgeVectorRefDO {
     @TableId(value = "id", type = IdType.AUTO)
@@ -28,7 +29,7 @@ public class KnowledgeVectorRefDO {
     private String embeddingModel;
     @TableField("embedding_dim")
     private Integer embeddingDim;
-    @TableField("metadata_json")
+    @TableField(value = "metadata_json", typeHandler = JsonbTypeHandler.class)
     private String metadata;
     @TableField("created_by")
     private Long createdBy;

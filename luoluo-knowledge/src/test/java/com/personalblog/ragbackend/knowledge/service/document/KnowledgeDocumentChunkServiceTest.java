@@ -1,9 +1,8 @@
 package com.personalblog.ragbackend.knowledge.service.document;
 
-import com.personalblog.ragbackend.knowledge.core.chunk.ChunkingStrategyFactory;
-import com.personalblog.ragbackend.knowledge.core.chunk.strategy.FixedSizeChunkingStrategy;
-import com.personalblog.ragbackend.knowledge.core.chunk.strategy.StructureAwareChunkingStrategy;
-import com.personalblog.ragbackend.knowledge.config.KnowledgeProperties;
+import com.personalblog.ragbackend.core.chunk.ChunkingStrategyFactory;
+import com.personalblog.ragbackend.core.chunk.strategy.FixedSizeChunkingStrategy;
+import com.personalblog.ragbackend.core.chunk.strategy.StructureAwareChunkingStrategy;
 import com.personalblog.ragbackend.knowledge.dto.document.DocumentChunkResponse;
 import com.personalblog.ragbackend.knowledge.dto.document.ParseResult;
 import org.junit.jupiter.api.Test;
@@ -18,11 +17,7 @@ class KnowledgeDocumentChunkServiceTest {
 
     @Test
     void chunkFileShouldSplitByStructureAndKeepSectionTitle() {
-        KnowledgeProperties properties = new KnowledgeProperties();
-        properties.getChunking().setChunkSize(700);
-        properties.getChunking().setChunkOverlap(120);
         KnowledgeDocumentChunkService service = new KnowledgeDocumentChunkService(
-                properties,
                 new ChunkingStrategyFactory(java.util.List.of(
                         new StructureAwareChunkingStrategy(),
                         new FixedSizeChunkingStrategy()
@@ -57,7 +52,6 @@ class KnowledgeDocumentChunkServiceTest {
     @Test
     void chunkFileShouldReturnFailureWhenParseFails() {
         KnowledgeDocumentChunkService service = new KnowledgeDocumentChunkService(
-                new KnowledgeProperties(),
                 new ChunkingStrategyFactory(java.util.List.of(
                         new StructureAwareChunkingStrategy(),
                         new FixedSizeChunkingStrategy()

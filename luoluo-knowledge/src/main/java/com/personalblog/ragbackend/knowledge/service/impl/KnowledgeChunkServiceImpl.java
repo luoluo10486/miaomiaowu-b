@@ -20,12 +20,10 @@ import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeBaseMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeChunkMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeDocumentMapper;
-import com.personalblog.ragbackend.knowledge.mapper.KnowledgeVectorRefMapper;
 import com.personalblog.ragbackend.knowledge.domain.enums.DocumentStatus;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeChunkService;
 import com.personalblog.ragbackend.knowledge.service.vector.KnowledgeVectorSpaceResolver;
 import com.personalblog.ragbackend.knowledge.service.vector.VectorStoreService;
-import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeVectorRefDO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +46,6 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     private final VectorStoreService vectorStoreService;
     private final EmbeddingService embeddingService;
     private final TokenCounterService tokenCounterService;
-    private final KnowledgeVectorRefMapper knowledgeVectorRefMapper;
     private final ObjectMapper objectMapper;
 
     public KnowledgeChunkServiceImpl(KnowledgeChunkMapper knowledgeChunkMapper,
@@ -58,7 +55,6 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
                                      VectorStoreService vectorStoreService,
                                      EmbeddingService embeddingService,
                                      TokenCounterService tokenCounterService,
-                                     KnowledgeVectorRefMapper knowledgeVectorRefMapper,
                                      ObjectMapper objectMapper) {
         this.knowledgeChunkMapper = knowledgeChunkMapper;
         this.knowledgeDocumentMapper = knowledgeDocumentMapper;
@@ -67,7 +63,6 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         this.vectorStoreService = vectorStoreService;
         this.embeddingService = embeddingService;
         this.tokenCounterService = tokenCounterService;
-        this.knowledgeVectorRefMapper = knowledgeVectorRefMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -201,9 +196,6 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         } else {
             List<String> vectorIds = chunks.stream().map(chunk -> String.valueOf(chunk.getId())).toList();
             vectorStoreService.deleteChunksByIds(kbDO.getCollectionName(), vectorIds);
-            knowledgeVectorRefMapper.delete(new LambdaQueryWrapper<KnowledgeVectorRefDO>()
-                    .eq(KnowledgeVectorRefDO::getDocId, document.getId())
-                    .in(KnowledgeVectorRefDO::getChunkId, chunks.stream().map(KnowledgeChunkDO::getId).toList()));
         }
     }
 
@@ -297,9 +289,6 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
                     .build());
         }
         vectorStoreService.indexDocumentChunks(kbDO.getCollectionName(), String.valueOf(document.getId()), vectorChunks);
-        for (KnowledgeChunkDO chunk : chunks) {
-            upsertVectorRef(document, kbDO, chunk);
-        }
     }
 
     private void syncChunkToVector(KnowledgeBaseDO kbDO,
@@ -313,42 +302,10 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
                 .index(chunk.getChunkIndex())
                 .build();
         vectorStoreService.updateChunk(kbDO.getCollectionName(), String.valueOf(document.getId()), vectorChunk);
-        upsertVectorRef(document, kbDO, chunk);
     }
 
     private void deleteVector(KnowledgeBaseDO kbDO, String vectorId) {
         vectorStoreService.deleteChunkById(kbDO.getCollectionName(), vectorId);
-        Long chunkId = tryParseLong(vectorId);
-        if (chunkId != null) {
-            knowledgeVectorRefMapper.delete(new LambdaQueryWrapper<KnowledgeVectorRefDO>()
-                    .eq(KnowledgeVectorRefDO::getChunkId, chunkId));
-        }
-    }
-
-    private void upsertVectorRef(KnowledgeDocumentDO document,
-                                 KnowledgeBaseDO kbDO,
-                                 KnowledgeChunkDO chunk) {
-        KnowledgeVectorRefDO ref = knowledgeVectorRefMapper.selectOne(new LambdaQueryWrapper<KnowledgeVectorRefDO>()
-                .eq(KnowledgeVectorRefDO::getChunkId, chunk.getId())
-                .last("LIMIT 1"));
-        if (ref == null) {
-            ref = new KnowledgeVectorRefDO();
-            ref.setChunkId(chunk.getId());
-            ref.setCreatedBy(parseUserId(UserContext.getUserId()));
-            ref.setDeleted(0);
-        }
-        ref.setKbId(document.getKbId());
-        ref.setDocId(document.getId());
-        ref.setCollectionName(kbDO.getCollectionName());
-        ref.setVectorId(String.valueOf(chunk.getId()));
-        ref.setEmbeddingModel(kbDO.getEmbeddingModel());
-        ref.setEmbeddingDim(vectorSpaceResolver.resolve(String.valueOf(kbDO.getId())).dimension());
-        ref.setMetadata(toJson(buildVectorMetadata(document, kbDO, chunk)));
-        if (ref.getId() == null) {
-            knowledgeVectorRefMapper.insert(ref);
-        } else {
-            knowledgeVectorRefMapper.updateById(ref);
-        }
     }
 
     private Map<String, Object> buildVectorMetadata(KnowledgeDocumentDO document,

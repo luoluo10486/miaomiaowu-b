@@ -1,8 +1,10 @@
 package com.personalblog.ragbackend.admin.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.personalblog.ragbackend.admin.controller.vo.DashboardOverviewVO;
 import com.personalblog.ragbackend.admin.controller.vo.DashboardPerformanceVO;
 import com.personalblog.ragbackend.admin.controller.vo.DashboardTrendsVO;
+import com.personalblog.ragbackend.common.satoken.annotation.MemberLoginRequired;
 import com.personalblog.ragbackend.admin.service.DashboardService;
 import com.personalblog.ragbackend.common.web.domain.Result;
 import com.personalblog.ragbackend.common.web.domain.Results;
@@ -15,16 +17,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/admin/dashboard")
 @RequiredArgsConstructor
+@MemberLoginRequired
 public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/overview")
     public Result<DashboardOverviewVO> overview(@RequestParam(required = false) String window) {
+        StpUtil.checkRole("admin");
         return Results.success(dashboardService.loadOverview(window));
     }
 
     @GetMapping("/performance")
     public Result<DashboardPerformanceVO> performance(@RequestParam(required = false) String window) {
+        StpUtil.checkRole("admin");
         return Results.success(dashboardService.loadPerformance(window));
     }
 
@@ -32,6 +37,7 @@ public class DashboardController {
     public Result<DashboardTrendsVO> trends(@RequestParam String metric,
                                             @RequestParam(required = false) String window,
                                             @RequestParam(required = false) String granularity) {
+        StpUtil.checkRole("admin");
         return Results.success(dashboardService.loadTrends(metric, window, granularity));
     }
 }

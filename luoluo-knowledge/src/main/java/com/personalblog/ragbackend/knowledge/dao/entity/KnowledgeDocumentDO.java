@@ -5,11 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.personalblog.ragbackend.knowledge.dao.handler.JsonbTypeHandler;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@TableName("t_knowledge_document")
+@TableName(value = "t_knowledge_document", autoResultMap = true)
 @Data
 public class KnowledgeDocumentDO {
     @TableId(value = "id", type = IdType.AUTO)
@@ -44,13 +45,13 @@ public class KnowledgeDocumentDO {
     private String processMode;
     @TableField("chunk_strategy")
     private String chunkStrategy;
-    @TableField("chunk_config")
+    @TableField(value = "chunk_config", typeHandler = JsonbTypeHandler.class)
     private String chunkConfig;
     @TableField("pipeline_id")
     private Long pipelineId;
     @TableField("error_message")
     private String errorMessage;
-    @TableField("metadata_json")
+    @TableField(value = "metadata_json", typeHandler = JsonbTypeHandler.class)
     private String metadataJson;
     @TableField("created_by")
     private Long createdBy;

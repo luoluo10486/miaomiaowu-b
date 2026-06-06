@@ -8,16 +8,19 @@ import com.personalblog.ragbackend.rag.core.prompt.PromptTemplateLoader;
 import com.personalblog.ragbackend.rag.constant.RAGConstant;
 import com.personalblog.ragbackend.rag.core.intent.IntentNode;
 import com.personalblog.ragbackend.rag.core.intent.NodeScore;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
+@Slf4j
 public class RAGPromptService {
     private final PromptTemplateLoader promptTemplateLoader;
 
@@ -30,7 +33,11 @@ public class RAGPromptService {
         String template = StrUtil.isNotBlank(plan.getBaseTemplate())
                 ? plan.getBaseTemplate()
                 : defaultTemplate(plan.getScene());
-        return StrUtil.isBlank(template) ? "" : PromptTemplateUtils.cleanupPrompt(template);
+        String contract = (plan.getScene() == PromptScene.MCP_ONLY || plan.getScene() == PromptScene.EMPTY)
+                ? ""
+                : promptTemplateLoader.load(RAGConstant.RAG_ANSWER_CONTRACT_PROMPT_PATH);
+        String mergedPrompt = mergePrompt(template, contract);
+        return StrUtil.isBlank(mergedPrompt) ? "" : PromptTemplateUtils.cleanupPrompt(mergedPrompt);
     }
 
     public List<ChatMessage> buildStructuredMessages(PromptContext context,
@@ -156,6 +163,13 @@ public class RAGPromptService {
             }
             sb.append(renderSection("kb-evidence", Map.of("body", context.getKbContext().trim())));
         }
+        String citationBody = buildCitationBody(context.getIntentChunks());
+        if (StrUtil.isNotBlank(citationBody)) {
+            if (!sb.isEmpty()) {
+                sb.append("\n\n");
+            }
+            sb.append(citationBody);
+        }
         return sb.toString().trim();
     }
 
@@ -180,6 +194,88 @@ public class RAGPromptService {
             return evidenceBody;
         }
         return evidenceBody + "\n\n" + question;
+    }
+
+    private String buildCitationBody(Map<String, List<RetrievedChunk>> intentChunks) {
+        List<RetrievedChunk> chunks = flattenChunks(intentChunks);
+        if (CollUtil.isEmpty(chunks)) {
+            return "";
+        }
+
+        List<String> citations = new ArrayList<>();
+        for (int index = 0; index < chunks.size(); index++) {
+            RetrievedChunk chunk = chunks.get(index);
+            Map<String, Object> metadata = chunk == null ? null : chunk.getMetadata();
+            citations.add(renderSection("kb-citation-item", Map.of(
+                    "index", String.valueOf(index + 1),
+                    "title", metadataText(metadata, "title", metadataText(metadata, "docName", metadataText(metadata, "documentTitle", "未命名文档"))),
+                    "source_url", metadataText(metadata, "sourceUrl", metadataText(metadata, "source_url", "未提供 URL")),
+                    "chunk_index", metadataText(metadata, "chunkIndex", metadataText(metadata, "chunk_index", String.valueOf(index + 1))),
+                    "score", formatScore(chunk == null ? null : chunk.getScore())
+            )));
+        }
+
+        return renderSection("kb-citations", Map.of("items", String.join("\n", citations)));
+    }
+
+    private List<RetrievedChunk> flattenChunks(Map<String, List<RetrievedChunk>> intentChunks) {
+        if (intentChunks == null || intentChunks.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, RetrievedChunk> uniqueChunks = new LinkedHashMap<>();
+        for (List<RetrievedChunk> chunks : intentChunks.values()) {
+            if (CollUtil.isEmpty(chunks)) {
+                continue;
+            }
+            for (RetrievedChunk chunk : chunks) {
+                if (chunk == null) {
+                    continue;
+                }
+                String key = buildChunkKey(chunk);
+                uniqueChunks.putIfAbsent(key, chunk);
+            }
+        }
+        return new ArrayList<>(uniqueChunks.values());
+    }
+
+    private String buildChunkKey(RetrievedChunk chunk) {
+        Map<String, Object> metadata = chunk.getMetadata();
+        String title = metadataText(metadata, "title", "");
+        String sourceUrl = metadataText(metadata, "sourceUrl", "");
+        String chunkIndex = metadataText(metadata, "chunkIndex", metadataText(metadata, "chunk_index", ""));
+        String documentId = metadataText(metadata, "documentId", metadataText(metadata, "docId", ""));
+        String text = StrUtil.blankToDefault(chunk.getText(), "");
+        return String.join("|", title, sourceUrl, chunkIndex, documentId, text);
+    }
+
+    private String metadataText(Map<String, Object> metadata, String key, String defaultValue) {
+        if (metadata == null || StrUtil.isBlank(key)) {
+            return defaultValue;
+        }
+        Object value = metadata.get(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        String text = String.valueOf(value).trim();
+        return StrUtil.isBlank(text) ? defaultValue : text;
+    }
+
+    private String formatScore(Float score) {
+        if (score == null) {
+            return "--";
+        }
+        return String.format(java.util.Locale.ROOT, "%.4f", score);
+    }
+
+    private String mergePrompt(String template, String contract) {
+        if (StrUtil.isBlank(template)) {
+            return contract;
+        }
+        if (StrUtil.isBlank(contract)) {
+            return template;
+        }
+        return template + "\n\n" + contract;
     }
 
     private String renderSection(String section, Map<String, String> slots) {
