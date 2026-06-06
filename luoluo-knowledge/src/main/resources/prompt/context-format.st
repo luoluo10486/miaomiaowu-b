@@ -9,6 +9,7 @@
 <source_url>{source_url}</source_url>
 <chunk_index>{chunk_index}</chunk_index>
 <score>{score}</score>
+<excerpt>{excerpt}</excerpt>
 </citation>
 
 --- section: kb-citations ---

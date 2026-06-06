@@ -22,6 +22,8 @@ import java.util.stream.IntStream;
 @Service
 @Slf4j
 public class RAGPromptService {
+    private static final int MAX_CITATION_EXCERPT_LENGTH = 220;
+
     private final PromptTemplateLoader promptTemplateLoader;
 
     public RAGPromptService(PromptTemplateLoader promptTemplateLoader) {
@@ -211,7 +213,8 @@ public class RAGPromptService {
                     "title", metadataText(metadata, "title", metadataText(metadata, "docName", metadataText(metadata, "documentTitle", "未命名文档"))),
                     "source_url", metadataText(metadata, "sourceUrl", metadataText(metadata, "source_url", "未提供 URL")),
                     "chunk_index", metadataText(metadata, "chunkIndex", metadataText(metadata, "chunk_index", String.valueOf(index + 1))),
-                    "score", formatScore(chunk == null ? null : chunk.getScore())
+                    "score", formatScore(chunk == null ? null : chunk.getScore()),
+                    "excerpt", buildExcerpt(chunk == null ? null : chunk.getText())
             )));
         }
 
@@ -268,6 +271,18 @@ public class RAGPromptService {
         return String.format(java.util.Locale.ROOT, "%.4f", score);
     }
 
+    private String buildExcerpt(String text) {
+        if (StrUtil.isBlank(text)) {
+            return "未提供片段";
+        }
+
+        String normalized = text.trim().replaceAll("\\s+", " ");
+        if (normalized.length() <= MAX_CITATION_EXCERPT_LENGTH) {
+            return normalized;
+        }
+        return normalized.substring(0, MAX_CITATION_EXCERPT_LENGTH).trim() + "...";
+    }
+
     private String mergePrompt(String template, String contract) {
         if (StrUtil.isBlank(template)) {
             return contract;
@@ -298,3 +313,4 @@ public class RAGPromptService {
         return StrUtil.blankToDefault(node.getName(), "").trim();
     }
 }
+
