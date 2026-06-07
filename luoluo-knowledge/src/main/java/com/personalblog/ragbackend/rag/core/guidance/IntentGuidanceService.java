@@ -2,6 +2,7 @@ package com.personalblog.ragbackend.rag.core.guidance;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseAccessService;
 import com.personalblog.ragbackend.rag.config.GuidanceProperties;
 import com.personalblog.ragbackend.rag.constant.RAGConstant;
 import com.personalblog.ragbackend.rag.core.intent.IntentNode;
@@ -28,15 +29,18 @@ public class IntentGuidanceService {
     private final IntentNodeRegistry intentNodeRegistry;
     private final PromptTemplateLoader promptTemplateLoader;
     private final AmbiguityLLMChecker ambiguityLLMChecker;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
 
     public IntentGuidanceService(GuidanceProperties guidanceProperties,
                                  IntentNodeRegistry intentNodeRegistry,
                                  PromptTemplateLoader promptTemplateLoader,
-                                 AmbiguityLLMChecker ambiguityLLMChecker) {
+                                 AmbiguityLLMChecker ambiguityLLMChecker,
+                                 KnowledgeBaseAccessService knowledgeBaseAccessService) {
         this.guidanceProperties = guidanceProperties;
         this.intentNodeRegistry = intentNodeRegistry;
         this.promptTemplateLoader = promptTemplateLoader;
         this.ambiguityLLMChecker = ambiguityLLMChecker;
+        this.knowledgeBaseAccessService = knowledgeBaseAccessService;
     }
 
     public GuidanceDecision detectAmbiguity(String question, List<SubQuestionIntent> subIntents) {
@@ -95,7 +99,20 @@ public class IntentGuidanceService {
         if (CollUtil.isEmpty(scores)) {
             return List.of();
         }
-        return NodeScoreFilters.kb(scores, RAGConstant.INTENT_MIN_SCORE);
+        return NodeScoreFilters.kb(scores, RAGConstant.INTENT_MIN_SCORE).stream()
+                .filter(this::isReadableKbIntent)
+                .toList();
+    }
+
+    private boolean isReadableKbIntent(NodeScore score) {
+        IntentNode node = score == null ? null : score.node();
+        if (node == null || !node.isKb()) {
+            return false;
+        }
+        if (StrUtil.isBlank(node.getKbId())) {
+            return true;
+        }
+        return knowledgeBaseAccessService.canRead(node.getKbId());
     }
 
     private boolean shouldSkipGuidance(String question, List<NodeScore> ranked) {

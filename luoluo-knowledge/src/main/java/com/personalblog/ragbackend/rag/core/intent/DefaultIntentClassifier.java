@@ -10,6 +10,7 @@ import com.personalblog.ragbackend.infra.chat.LLMService;
 import com.personalblog.ragbackend.infra.convention.ChatMessage;
 import com.personalblog.ragbackend.infra.convention.ChatRequest;
 import com.personalblog.ragbackend.infra.util.LLMResponseCleaner;
+import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseAccessService;
 import com.personalblog.ragbackend.rag.core.prompt.PromptTemplateLoader;
 import com.personalblog.ragbackend.rag.constant.RAGConstant;
 import com.personalblog.ragbackend.rag.dao.entity.IntentNodeEntity;
@@ -36,17 +37,20 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
     private final PromptTemplateLoader promptTemplateLoader;
     private final IntentTreeCacheManager intentTreeCacheManager;
     private final ObjectMapper objectMapper;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
 
     public DefaultIntentClassifier(LLMService llmService,
                                    IntentNodeMapper intentNodeMapper,
                                    PromptTemplateLoader promptTemplateLoader,
                                    IntentTreeCacheManager intentTreeCacheManager,
-                                   ObjectMapper objectMapper) {
+                                   ObjectMapper objectMapper,
+                                   KnowledgeBaseAccessService knowledgeBaseAccessService) {
         this.llmService = llmService;
         this.intentNodeMapper = intentNodeMapper;
         this.promptTemplateLoader = promptTemplateLoader;
         this.intentTreeCacheManager = intentTreeCacheManager;
         this.objectMapper = objectMapper;
+        this.knowledgeBaseAccessService = knowledgeBaseAccessService;
     }
 
     @Override
@@ -164,7 +168,9 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
             return new IntentTreeData(List.of(), List.of(), Map.of());
         }
 
-        List<IntentNode> allNodes = flatten(roots);
+        List<IntentNode> allNodes = flatten(roots).stream()
+                .filter(this::isNodeReadable)
+                .toList();
         List<IntentNode> leafNodes = allNodes.stream()
                 .filter(IntentNode::isLeaf)
                 .toList();
@@ -172,6 +178,16 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
                 .filter(node -> StrUtil.isNotBlank(node.getIntentCode()))
                 .collect(java.util.stream.Collectors.toMap(IntentNode::getIntentCode, node -> node, (left, right) -> left, LinkedHashMap::new));
         return new IntentTreeData(allNodes, leafNodes, id2Node);
+    }
+
+    private boolean isNodeReadable(IntentNode node) {
+        if (node == null || !node.isKb()) {
+            return true;
+        }
+        if (StrUtil.isBlank(node.getKbId())) {
+            return true;
+        }
+        return knowledgeBaseAccessService.canRead(node.getKbId());
     }
 
     private List<IntentNode> loadIntentTreeFromDB() {

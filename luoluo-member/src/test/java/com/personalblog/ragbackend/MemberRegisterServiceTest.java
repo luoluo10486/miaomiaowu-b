@@ -89,6 +89,7 @@ class MemberRegisterServiceTest {
         assertThat(savedUser.getEmail()).isEqualTo("new@example.com");
         assertThat(savedUser.getPasswordHash()).isEqualTo("encoded-password");
         assertThat(savedUser.getDisplayName()).isEqualTo("New User");
+        assertThat(savedUser.getUserType()).isEqualTo("user");
         assertThat(savedUser.getStatus()).isEqualTo("ACTIVE");
         assertThat(response.token()).isEqualTo("token-123");
     }

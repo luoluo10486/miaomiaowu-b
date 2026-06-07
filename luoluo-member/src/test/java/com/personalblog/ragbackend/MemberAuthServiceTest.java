@@ -61,6 +61,7 @@ class MemberAuthServiceTest {
         assertThat(response.token()).isEqualTo("token-123");
         assertThat(response.grantType()).isEqualTo("password");
         assertThat(response.user().username()).isEqualTo("demo_user");
+        assertThat(response.user().userType()).isEqualTo("user");
         verify(memberSessionService).createSession(1L, "password", "web", "198.51.100.10");
     }
 
@@ -94,6 +95,22 @@ class MemberAuthServiceTest {
         memberAuthService.logoutCurrentSession();
 
         verify(memberSessionService).logoutCurrentSession();
+    }
+
+    @Test
+    void createLoginResponseShouldNormalizeAdditionalRoles() {
+        MemberUser user = buildUser();
+        user.setUserType("yys,impart");
+        when(memberSessionService.createSession(
+                eq(1L),
+                eq("password"),
+                eq("app"),
+                eq("198.51.100.12")
+        )).thenReturn(new AuthSessionResult(12L, "token-789", LocalDateTime.now().plusMinutes(30)));
+
+        MemberLoginResponse response = memberAuthService.createLoginResponse(user, "password", "app", "198.51.100.12");
+
+        assertThat(response.user().userType()).isEqualTo("user,yys,impart");
     }
 
     private MemberUser buildUser() {

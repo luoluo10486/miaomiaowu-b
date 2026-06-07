@@ -1,5 +1,6 @@
 package com.personalblog.ragbackend.member.service;
 
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.member.domain.MemberUser;
 import com.personalblog.ragbackend.member.dto.profile.MemberProfileResponse;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ public class MemberProfileService {
                 user.getDisplayName(),
                 user.getPhone(),
                 user.getEmail(),
-                user.getUserType(),
+                RoleUtils.normalizeUserTypeExpression(user.getUserType()),
                 user.getStatus()
         );
     }
