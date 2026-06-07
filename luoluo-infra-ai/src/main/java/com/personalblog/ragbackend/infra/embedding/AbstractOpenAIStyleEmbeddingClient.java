@@ -12,6 +12,8 @@ import com.personalblog.ragbackend.infra.http.ModelClientErrorType;
 import com.personalblog.ragbackend.infra.http.ModelClientException;
 import com.personalblog.ragbackend.infra.http.ModelUrlResolver;
 import com.personalblog.ragbackend.infra.model.ModelTarget;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -23,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class AbstractOpenAIStyleEmbeddingClient implements EmbeddingClient {
+    private static final Logger log = LoggerFactory.getLogger(AbstractOpenAIStyleEmbeddingClient.class);
 
     protected final HttpClient httpClient;
     protected final ObjectMapper objectMapper;
@@ -89,26 +92,7 @@ public abstract class AbstractOpenAIStyleEmbeddingClient implements EmbeddingCli
                 .POST(HttpRequest.BodyPublishers.ofString(writeBody(buildRequestBody(texts, target))))
                 .build();
 
-        try {
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new ModelClientException(
-                        provider() + " embedding request failed: HTTP " + response.statusCode(),
-                        ModelClientErrorType.fromHttpStatus(response.statusCode()),
-                        response.statusCode()
-                );
-            }
-            return parseEmbeddings(HttpResponseHelper.parseJson(response.body(), provider()), texts.size());
-        } catch (ModelClientException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new ModelClientException(
-                    provider() + " embedding request failed: " + ex.getMessage(),
-                    ModelClientErrorType.NETWORK_ERROR,
-                    null,
-                    ex
-            );
-        }
+        return executeWithRetry(request, texts, target);
     }
 
     protected ObjectNode buildRequestBody(List<String> texts, ModelTarget target) {
@@ -157,6 +141,93 @@ public abstract class AbstractOpenAIStyleEmbeddingClient implements EmbeddingCli
             vector.add((float) value.asDouble());
         }
         return vector;
+    }
+
+    private List<List<Float>> executeWithRetry(HttpRequest request, List<String> texts, ModelTarget target) {
+        List<Long> backoffMs = resolveBackoffMs();
+        int maxAttempts = resolveMaxAttempts(backoffMs);
+        ModelClientException lastRateLimited = null;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return executeOnce(request, texts, target);
+            } catch (ModelClientException exception) {
+                if (exception.getErrorType() != ModelClientErrorType.RATE_LIMITED) {
+                    throw exception;
+                }
+                lastRateLimited = exception;
+                if (attempt >= maxAttempts) {
+                    break;
+                }
+                long sleepMs = backoffMs.get(Math.min(attempt - 1, backoffMs.size() - 1));
+                log.warn("embedding rate limited, provider={}, model={}, batchSize={}, attempt={}/{}, retryInMs={}",
+                        provider(), target.id(), texts.size(), attempt, maxAttempts, sleepMs);
+                sleepQuietly(sleepMs);
+            }
+        }
+        throw lastRateLimited == null
+                ? new ModelClientException(provider() + " embedding request failed after retries",
+                ModelClientErrorType.RATE_LIMITED,
+                429)
+                : lastRateLimited;
+    }
+
+    private List<List<Float>> executeOnce(HttpRequest request, List<String> texts, ModelTarget target) {
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new ModelClientException(
+                        provider() + " embedding request failed: HTTP " + response.statusCode(),
+                        ModelClientErrorType.fromHttpStatus(response.statusCode()),
+                        response.statusCode()
+                );
+            }
+            log.info("embedding request succeeded, provider={}, model={}, batchSize={}",
+                    provider(), target.id(), texts.size());
+            return parseEmbeddings(HttpResponseHelper.parseJson(response.body(), provider()), texts.size());
+        } catch (ModelClientException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new ModelClientException(
+                    provider() + " embedding request failed: " + ex.getMessage(),
+                    ModelClientErrorType.NETWORK_ERROR,
+                    null,
+                    ex
+            );
+        }
+    }
+
+    private int resolveMaxAttempts(List<Long> backoffMs) {
+        AIModelProperties.Retry retry = aiProperties.getEmbedding().getRetry();
+        int configured = retry == null || retry.getMaxAttempts() == null ? 3 : retry.getMaxAttempts();
+        return Math.max(1, Math.min(configured, Math.max(1, backoffMs.size())));
+    }
+
+    private List<Long> resolveBackoffMs() {
+        AIModelProperties.Retry retry = aiProperties.getEmbedding().getRetry();
+        if (retry == null || retry.getBackoffMs() == null || retry.getBackoffMs().isEmpty()) {
+            return List.of(2000L, 5000L, 10000L);
+        }
+        List<Long> normalized = retry.getBackoffMs().stream()
+                .map(value -> value == null || value < 0 ? 0L : value)
+                .toList();
+        return normalized.isEmpty() ? List.of(2000L, 5000L, 10000L) : normalized;
+    }
+
+    private void sleepQuietly(long sleepMs) {
+        if (sleepMs <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(sleepMs);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new ModelClientException(
+                    provider() + " embedding retry interrupted",
+                    ModelClientErrorType.NETWORK_ERROR,
+                    null,
+                    exception
+            );
+        }
     }
 
     private String writeBody(ObjectNode body) {

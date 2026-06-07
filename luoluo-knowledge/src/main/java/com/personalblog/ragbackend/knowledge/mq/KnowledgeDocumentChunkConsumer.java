@@ -14,7 +14,9 @@ import org.springframework.util.StringUtils;
 @Component
 @RocketMQMessageListener(
         topic = "knowledge-document-chunk_topic${unique-name:}",
-        consumerGroup = "knowledge-document-chunk_cg${unique-name:}"
+        consumerGroup = "knowledge-document-chunk_cg${unique-name:}",
+        consumeThreadNumber = 2,
+        consumeThreadMax = 2
 )
 public class KnowledgeDocumentChunkConsumer implements RocketMQListener<MessageWrapper<KnowledgeDocumentChunkEvent>> {
     private static final Logger log = LoggerFactory.getLogger(KnowledgeDocumentChunkConsumer.class);

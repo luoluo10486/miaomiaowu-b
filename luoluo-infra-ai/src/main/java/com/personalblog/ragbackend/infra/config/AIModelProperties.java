@@ -93,6 +93,12 @@ public class AIModelProperties {
         private String defaultModel;
         private String deepThinkingModel;
 
+        @Min(1)
+        private Integer maxConcurrent = 1;
+
+        @Valid
+        private Retry retry = new Retry();
+
         @Valid
         private List<ModelCandidate> candidates = new ArrayList<>();
 
@@ -112,12 +118,52 @@ public class AIModelProperties {
             this.deepThinkingModel = deepThinkingModel;
         }
 
+        public Integer getMaxConcurrent() {
+            return maxConcurrent;
+        }
+
+        public void setMaxConcurrent(Integer maxConcurrent) {
+            this.maxConcurrent = maxConcurrent;
+        }
+
+        public Retry getRetry() {
+            return retry;
+        }
+
+        public void setRetry(Retry retry) {
+            this.retry = retry == null ? new Retry() : retry;
+        }
+
         public List<ModelCandidate> getCandidates() {
             return candidates;
         }
 
         public void setCandidates(List<ModelCandidate> candidates) {
             this.candidates = candidates;
+        }
+    }
+
+    public static class Retry {
+        @Min(0)
+        private Integer maxAttempts = 3;
+
+        @Valid
+        private List<@Min(0) Long> backoffMs = new ArrayList<>(List.of(2000L, 5000L, 10000L));
+
+        public Integer getMaxAttempts() {
+            return maxAttempts;
+        }
+
+        public void setMaxAttempts(Integer maxAttempts) {
+            this.maxAttempts = maxAttempts;
+        }
+
+        public List<Long> getBackoffMs() {
+            return backoffMs;
+        }
+
+        public void setBackoffMs(List<Long> backoffMs) {
+            this.backoffMs = backoffMs == null ? new ArrayList<>() : new ArrayList<>(backoffMs);
         }
     }
 

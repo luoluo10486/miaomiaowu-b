@@ -156,6 +156,10 @@ ai:
 
   embedding:
     default-model: qwen-emb-8b
+    max-concurrent: 1
+    retry:
+      max-attempts: 3
+      backoff-ms: [2000, 5000, 10000]
     candidates:
       - id: qwen-emb-8b
         provider: siliconflow

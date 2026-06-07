@@ -31,6 +31,6 @@ public class SiliconFlowEmbeddingClient extends AbstractOpenAIStyleEmbeddingClie
 
     @Override
     protected int maxBatchSize() {
-        return 32;
+        return 8;
     }
 }
