@@ -3,7 +3,8 @@ package com.personalblog.ragbackend.knowledge.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personalblog.ragbackend.common.context.UserContext;
-import com.personalblog.ragbackend.knowledge.controller.request.QqChatImportRequest;
+import com.personalblog.ragbackend.core.chunk.ChunkingMode;
+import com.personalblog.ragbackend.knowledge.controller.request.ChatImportRequest;
 import com.personalblog.ragbackend.knowledge.controller.vo.ChatImportSummaryVO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeBaseDO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentDO;
@@ -15,7 +16,8 @@ import com.personalblog.ragbackend.knowledge.domain.enums.SourceType;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeBaseMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeDocumentMapper;
 import com.personalblog.ragbackend.knowledge.service.chat.ChatChunkingOptions;
-import com.personalblog.ragbackend.knowledge.service.chat.QqChatTranscriptParser;
+import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptParser;
+import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptParserRegistry;
 import com.personalblog.ragbackend.knowledge.service.document.KnowledgeFileStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,14 +37,12 @@ import java.util.Set;
 
 @Service
 public class KnowledgeChatImportService {
-    private static final String CHAT_DOC_TYPE = "chat_qq_group";
-
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final KnowledgeDocumentService knowledgeDocumentService;
     private final KnowledgeBaseAccessService knowledgeBaseAccessService;
     private final KnowledgeFileStorageService knowledgeFileStorageService;
-    private final QqChatTranscriptParser qqChatTranscriptParser;
+    private final ChatTranscriptParserRegistry chatTranscriptParserRegistry;
     private final ObjectMapper objectMapper;
 
     public KnowledgeChatImportService(KnowledgeBaseMapper knowledgeBaseMapper,
@@ -50,29 +50,39 @@ public class KnowledgeChatImportService {
                                       KnowledgeDocumentService knowledgeDocumentService,
                                       KnowledgeBaseAccessService knowledgeBaseAccessService,
                                       KnowledgeFileStorageService knowledgeFileStorageService,
-                                      QqChatTranscriptParser qqChatTranscriptParser,
+                                      ChatTranscriptParserRegistry chatTranscriptParserRegistry,
                                       ObjectMapper objectMapper) {
         this.knowledgeBaseMapper = knowledgeBaseMapper;
         this.knowledgeDocumentMapper = knowledgeDocumentMapper;
         this.knowledgeDocumentService = knowledgeDocumentService;
         this.knowledgeBaseAccessService = knowledgeBaseAccessService;
         this.knowledgeFileStorageService = knowledgeFileStorageService;
-        this.qqChatTranscriptParser = qqChatTranscriptParser;
+        this.chatTranscriptParserRegistry = chatTranscriptParserRegistry;
         this.objectMapper = objectMapper;
     }
 
     @Transactional
-    public ChatImportSummaryVO importQqChatTranscript(String kbId, QqChatImportRequest request, MultipartFile file) {
+    public ChatImportSummaryVO importQqChatTranscript(String kbId, ChatImportRequest request, MultipartFile file) {
+        return importChatTranscript(kbId, request, file, "qq");
+    }
+
+    @Transactional
+    public ChatImportSummaryVO importWechatChatTranscript(String kbId, ChatImportRequest request, MultipartFile file) {
+        return importChatTranscript(kbId, request, file, "wechat");
+    }
+
+    private ChatImportSummaryVO importChatTranscript(String kbId, ChatImportRequest request, MultipartFile file, String platform) {
         KnowledgeBaseDO knowledgeBase = requireKnowledgeBase(parseId(kbId));
         knowledgeBaseAccessService.assertManageable(knowledgeBase);
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("chat transcript file is required");
         }
         if (request != null && StringUtils.hasText(request.getSplitBy()) && !"month".equalsIgnoreCase(request.getSplitBy().trim())) {
-            throw new IllegalArgumentException("qq chat import only supports splitBy=month");
+            throw new IllegalArgumentException("chat import only supports splitBy=month");
         }
 
-        QqChatTranscript transcript = qqChatTranscriptParser.parse(file);
+        ChatTranscriptParser parser = chatTranscriptParserRegistry.requireByPlatform(platform);
+        QqChatTranscript transcript = parser.parse(file);
         if (transcript.messages().isEmpty()) {
             throw new IllegalArgumentException("chat transcript contains no messages");
         }
@@ -80,7 +90,7 @@ public class KnowledgeChatImportService {
         String fileUrl = knowledgeFileStorageService.store(
                 file,
                 knowledgeBase.getCollectionName(),
-                StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "qq-chat.txt"
+                StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : platform + "-chat.txt"
         );
         String sourceFileHash = sha256Hex(file);
 
@@ -105,7 +115,7 @@ public class KnowledgeChatImportService {
             }
             KnowledgeDocumentDO existing = knowledgeDocumentMapper.selectOne(new LambdaQueryWrapper<KnowledgeDocumentDO>()
                     .eq(KnowledgeDocumentDO::getKbId, knowledgeBase.getId())
-                    .eq(KnowledgeDocumentDO::getDocName, buildDocumentName(transcript.groupName(), month))
+                    .eq(KnowledgeDocumentDO::getDocName, buildDocumentName(transcript, month))
                     .eq(KnowledgeDocumentDO::getDeleted, 0)
                     .last("limit 1"));
             if (existing != null) {
@@ -114,7 +124,7 @@ public class KnowledgeChatImportService {
 
             KnowledgeDocumentDO document = new KnowledgeDocumentDO();
             document.setKbId(knowledgeBase.getId());
-            document.setDocName(buildDocumentName(transcript.groupName(), month));
+            document.setDocName(buildDocumentName(transcript, month));
             document.setEnabled(1);
             document.setChunkCount(0);
             document.setFileUrl(fileUrl);
@@ -124,10 +134,11 @@ public class KnowledgeChatImportService {
             document.setStatus(DocumentStatus.PENDING.getCode());
             document.setSourceType(SourceType.FILE.getValue());
             document.setSourceFileName(transcript.sourceFileName());
-            document.setChunkStrategy("chat_qq_window");
+            document.setChunkStrategy(ChunkingMode.CHAT_QQ_WINDOW.getValue());
             document.setChunkConfig(chunkConfig);
             document.setMetadataJson(toJson(Map.of(
-                    "docType", CHAT_DOC_TYPE,
+                    "docType", transcript.docType(),
+                    "chatPlatform", transcript.platform(),
                     "groupName", transcript.groupName(),
                     "bucketMonth", month,
                     "sourceFileHash", sourceFileHash,
@@ -175,7 +186,7 @@ public class KnowledgeChatImportService {
         return months;
     }
 
-    private ChatChunkingOptions normalizeOptions(QqChatImportRequest request, int totalMessages) {
+    private ChatChunkingOptions normalizeOptions(ChatImportRequest request, int totalMessages) {
         int minMessages = intValue(request == null ? null : request.getMinMessages(), 6);
         int maxMessages = intValue(request == null ? null : request.getMaxMessages(), 12);
         int overlapMessages = intValue(request == null ? null : request.getOverlapMessages(), 2);
@@ -186,7 +197,7 @@ public class KnowledgeChatImportService {
         return new ChatChunkingOptions(minMessages, maxMessages, overlapMessages, targetChars, maxChars, splitGapMinutes, maxChunkCount);
     }
 
-    private boolean resolveAutoStart(QqChatImportRequest request) {
+    private boolean resolveAutoStart(ChatImportRequest request) {
         return request == null || request.getAutoStart() == null || request.getAutoStart();
     }
 
@@ -194,9 +205,13 @@ public class KnowledgeChatImportService {
         return value == null ? defaultValue : value;
     }
 
-    private String buildDocumentName(String groupName, String month) {
-        String normalizedGroupName = StringUtils.hasText(groupName) ? groupName.trim() : "qq-chat";
-        return normalizedGroupName + "#" + month;
+    private String buildDocumentName(QqChatTranscript transcript, String month) {
+        String fallback = StringUtils.hasText(transcript.platform()) ? transcript.platform().trim() + "-chat" : "chat";
+        String normalizedGroupName = StringUtils.hasText(transcript.groupName()) ? transcript.groupName().trim() : fallback;
+        if ("qq".equalsIgnoreCase(transcript.platform())) {
+            return normalizedGroupName + "#" + month;
+        }
+        return normalizedGroupName + "#" + month + "@" + transcript.platform();
     }
 
     private KnowledgeBaseDO requireKnowledgeBase(Long kbId) {

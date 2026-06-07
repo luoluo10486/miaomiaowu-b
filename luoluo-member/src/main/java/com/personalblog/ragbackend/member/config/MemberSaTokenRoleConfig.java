@@ -33,7 +33,7 @@ public class MemberSaTokenRoleConfig implements StpInterface {
         if (user == null || !StringUtils.hasText(user.getUserType())) {
             return List.of();
         }
-        return new ArrayList<>(RoleUtils.parseRoles(user.getUserType()));
+        return new ArrayList<>(RoleUtils.parseRoles(RoleUtils.normalizeUserTypeExpression(user.getUserType())));
     }
 
     private Long parseUserId(Object loginId) {

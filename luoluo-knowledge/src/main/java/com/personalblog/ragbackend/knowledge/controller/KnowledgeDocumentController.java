@@ -6,7 +6,7 @@ import com.personalblog.ragbackend.common.web.domain.Results;
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeDocumentPageRequest;
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeDocumentUpdateRequest;
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeDocumentUploadRequest;
-import com.personalblog.ragbackend.knowledge.controller.request.QqChatImportRequest;
+import com.personalblog.ragbackend.knowledge.controller.request.ChatImportRequest;
 import com.personalblog.ragbackend.knowledge.controller.vo.ChatImportSummaryVO;
 import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeDocumentChunkLogVO;
 import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeDocumentSearchVO;
@@ -54,8 +54,15 @@ public class KnowledgeDocumentController {
     @PostMapping(value = "/knowledge-base/{kb-id}/chat-import/qq", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<ChatImportSummaryVO> importQqChatTranscript(@PathVariable("kb-id") String kbId,
                                                               @RequestPart("file") MultipartFile file,
-                                                              @ModelAttribute QqChatImportRequest requestParam) {
+                                                              @ModelAttribute ChatImportRequest requestParam) {
         return Results.success(knowledgeChatImportService.importQqChatTranscript(kbId, requestParam, file));
+    }
+
+    @PostMapping(value = "/knowledge-base/{kb-id}/chat-import/wechat", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Result<ChatImportSummaryVO> importWechatChatTranscript(@PathVariable("kb-id") String kbId,
+                                                                  @RequestPart("file") MultipartFile file,
+                                                                  @ModelAttribute ChatImportRequest requestParam) {
+        return Results.success(knowledgeChatImportService.importWechatChatTranscript(kbId, requestParam, file));
     }
 
     @PostMapping("/knowledge-base/docs/{doc-id}/chunk")

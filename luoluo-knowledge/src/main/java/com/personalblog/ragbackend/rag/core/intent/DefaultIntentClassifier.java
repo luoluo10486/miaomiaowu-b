@@ -199,7 +199,7 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
             node.setPromptTemplate(entity.getPromptTemplate());
             node.setPromptSnippet(entity.getPromptSnippet());
             node.setSortOrder(entity.getSortOrder());
-            node.setKbId(entity.getKbId());
+            node.setKbId(entity.getKbId() == null ? null : String.valueOf(entity.getKbId()));
             node.setChildren(new ArrayList<>());
             if (entity.getLevel() != null) {
                 node.setLevel(IntentLevel.fromCode(entity.getLevel()));

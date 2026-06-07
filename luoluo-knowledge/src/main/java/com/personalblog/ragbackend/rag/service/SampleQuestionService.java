@@ -19,5 +19,5 @@ public interface SampleQuestionService {
 
     IPage<SampleQuestionVO> pageQuery(SampleQuestionPageRequest requestParam);
 
-    List<SampleQuestionVO> listRandomQuestions();
+    List<SampleQuestionVO> listHomepageQuestions();
 }

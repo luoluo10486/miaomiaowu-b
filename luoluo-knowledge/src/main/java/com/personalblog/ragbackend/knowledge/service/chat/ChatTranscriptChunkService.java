@@ -98,7 +98,8 @@ public class ChatTranscriptChunkService {
             lines.add(formatMessage(message));
         }
         Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("docType", "chat_qq_group");
+        metadata.put("docType", transcript.docType());
+        metadata.put("chatPlatform", transcript.platform());
         metadata.put("groupName", transcript.groupName());
         metadata.put("bucketMonth", bucketMonth);
         metadata.put("startTime", formatDateTime(first.timestamp()));

@@ -23,7 +23,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public class QqChatTranscriptParser {
+public class QqChatTranscriptParser implements ChatTranscriptParser {
+    public static final String PLATFORM = "qq";
+    public static final String DOC_TYPE = "chat_qq_group";
     private static final Charset GB18030 = Charset.forName("GB18030");
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final Pattern HEADER_PATTERN = Pattern.compile("^\\[(.*?)]\\s*(.*?):\\s*$");
@@ -36,12 +38,24 @@ public class QqChatTranscriptParser {
     private static final String HEADER_CONTENT = "\u5185\u5bb9:";
     private static final String TRANSCRIPT_TITLE = "QQ\u804a\u5929\u8bb0\u5f55\u5bfc\u51fa\u6587\u4ef6";
 
+    @Override
+    public String platform() {
+        return PLATFORM;
+    }
+
+    @Override
+    public String docType() {
+        return DOC_TYPE;
+    }
+
+    @Override
     public QqChatTranscript parse(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("chat transcript file is required");
         }
         try {
-            return parse(file.getBytes(), file.getOriginalFilename());
+            String fileName = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "qq-chat.txt";
+            return parse(file.getBytes(), fileName);
         } catch (IOException exception) {
             throw new IllegalStateException("failed to read chat transcript file", exception);
         }
@@ -103,6 +117,8 @@ public class QqChatTranscriptParser {
 
         return new QqChatTranscript(
                 fileName,
+                PLATFORM,
+                DOC_TYPE,
                 header.getOrDefault("groupName", ""),
                 header.getOrDefault("chatType", ""),
                 exportedAt,

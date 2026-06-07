@@ -97,11 +97,14 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
     }
 
     @Override
-    public List<SampleQuestionVO> listRandomQuestions() {
+    public List<SampleQuestionVO> listHomepageQuestions() {
         List<SampleQuestionEntity> records = sampleQuestionMapper.selectList(
                 Wrappers.lambdaQuery(SampleQuestionEntity.class)
                         .eq(SampleQuestionEntity::getDeleted, 0)
-                        .last("ORDER BY RANDOM() LIMIT " + DEFAULT_LIMIT)
+                        .eq(SampleQuestionEntity::getEnabled, 1)
+                        .orderByAsc(SampleQuestionEntity::getSortOrder)
+                        .orderByDesc(SampleQuestionEntity::getUpdatedAt)
+                        .last("LIMIT " + DEFAULT_LIMIT)
         );
         if (records == null || records.isEmpty()) {
             return List.of();

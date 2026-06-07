@@ -10,12 +10,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
 public class ChatTranscriptBoostPostProcessor implements SearchResultPostProcessor {
-    private static final String CHAT_DOC_TYPE = "chat_qq_group";
+    private static final Set<String> CHAT_DOC_TYPES = Set.of("chat_qq_group", "chat_wechat_group");
     private static final Pattern DAY_PATTERN = Pattern.compile("\\b(20\\d{2}-\\d{2}-\\d{2})\\b");
     private static final Pattern MONTH_PATTERN = Pattern.compile("\\b(20\\d{2}-\\d{2})\\b");
     private static final Pattern MONTH_CN_PATTERN = Pattern.compile("(20\\d{2})\\s*年\\s*(\\d{1,2})\\s*月");
@@ -80,7 +81,7 @@ public class ChatTranscriptBoostPostProcessor implements SearchResultPostProcess
     }
 
     private boolean isChatChunk(Map<String, Object> metadata) {
-        return metadata != null && CHAT_DOC_TYPE.equals(String.valueOf(metadata.get("docType")));
+        return metadata != null && CHAT_DOC_TYPES.contains(String.valueOf(metadata.get("docType")));
     }
 
     private boolean dayMatches(Map<String, Object> metadata, String day) {

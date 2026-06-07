@@ -46,8 +46,9 @@ import com.personalblog.ragbackend.knowledge.service.KnowledgeDocumentScheduleSe
 import com.personalblog.ragbackend.knowledge.service.KnowledgeChunkService;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeDocumentService;
 import com.personalblog.ragbackend.knowledge.service.chat.ChatChunkingOptions;
+import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptParser;
+import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptParserRegistry;
 import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptChunkService;
-import com.personalblog.ragbackend.knowledge.service.chat.QqChatTranscriptParser;
 import com.personalblog.ragbackend.knowledge.service.document.KnowledgeDocumentChunkService;
 import com.personalblog.ragbackend.knowledge.service.document.KnowledgeFileStorageService;
 import com.personalblog.ragbackend.ingestion.domain.context.DocumentSource;
@@ -94,8 +95,6 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
-    private static final String CHAT_DOC_TYPE = "chat_qq_group";
-
     @Value("knowledge-document-chunk_topic${unique-name:}")
     private String chunkTopic;
 
@@ -114,7 +113,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final KnowledgeDocumentScheduleService knowledgeDocumentScheduleService;
     private final KnowledgeChunkService knowledgeChunkService;
     private final KnowledgeBaseAccessService knowledgeBaseAccessService;
-    private final QqChatTranscriptParser qqChatTranscriptParser;
+    private final ChatTranscriptParserRegistry chatTranscriptParserRegistry;
     private final ChatTranscriptChunkService chatTranscriptChunkService;
     private final VectorStoreService vectorStoreService;
     private final EmbeddingService embeddingService;
@@ -139,7 +138,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                                         KnowledgeDocumentScheduleService knowledgeDocumentScheduleService,
                                         KnowledgeChunkService knowledgeChunkService,
                                         KnowledgeBaseAccessService knowledgeBaseAccessService,
-                                        QqChatTranscriptParser qqChatTranscriptParser,
+                                        ChatTranscriptParserRegistry chatTranscriptParserRegistry,
                                         ChatTranscriptChunkService chatTranscriptChunkService,
                                         VectorStoreService vectorStoreService,
                                         EmbeddingService embeddingService,
@@ -163,7 +162,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         this.knowledgeDocumentScheduleService = knowledgeDocumentScheduleService;
         this.knowledgeChunkService = knowledgeChunkService;
         this.knowledgeBaseAccessService = knowledgeBaseAccessService;
-        this.qqChatTranscriptParser = qqChatTranscriptParser;
+        this.chatTranscriptParserRegistry = chatTranscriptParserRegistry;
         this.chatTranscriptChunkService = chatTranscriptChunkService;
         this.vectorStoreService = vectorStoreService;
         this.embeddingService = embeddingService;
@@ -427,13 +426,14 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     private ChunkProcessResult runChatChunkProcess(KnowledgeDocumentDO document, MultipartFile file) {
         long extractStart = System.currentTimeMillis();
-        QqChatTranscript transcript = qqChatTranscriptParser.parse(file);
+        Map<String, Object> documentMetadata = readJsonMap(document.getMetadataJson());
+        ChatTranscriptParser parser = resolveChatTranscriptParser(documentMetadata);
+        QqChatTranscript transcript = parser.parse(file);
         long extractDuration = System.currentTimeMillis() - extractStart;
         if (transcript.messages().isEmpty()) {
             throw new IllegalStateException("chat transcript contains no messages");
         }
 
-        Map<String, Object> documentMetadata = readJsonMap(document.getMetadataJson());
         String bucketMonth = stringValue(documentMetadata, "bucketMonth");
         if (!StringUtils.hasText(bucketMonth)) {
             throw new IllegalStateException("chat transcript document is missing bucketMonth metadata");
@@ -453,6 +453,14 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
         List<VectorChunk> vectorChunks = buildVectorChunks(document, chatChunks, embeddings);
         return new ChunkProcessResult(vectorChunks, extractDuration, chunkDuration, embedDuration);
+    }
+
+    private ChatTranscriptParser resolveChatTranscriptParser(Map<String, Object> documentMetadata) {
+        String docType = stringValue(documentMetadata, "docType");
+        if (!StringUtils.hasText(docType)) {
+            return chatTranscriptParserRegistry.requireByPlatform("qq");
+        }
+        return chatTranscriptParserRegistry.requireByDocType(docType);
     }
 
     private ChunkProcessResult runPipelineProcess(KnowledgeDocumentDO document) {

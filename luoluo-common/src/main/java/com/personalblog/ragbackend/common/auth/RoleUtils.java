@@ -38,6 +38,21 @@ public final class RoleUtils {
         return String.join(",", roles);
     }
 
+    public static String normalizeUserTypeExpression(String roleExpression) {
+        Set<String> roles = parseRoles(roleExpression);
+        if (roles.isEmpty()) {
+            return ROLE_USER;
+        }
+        if (roles.contains(ROLE_SUPER_ADMIN)) {
+            return ROLE_SUPER_ADMIN;
+        }
+
+        LinkedHashSet<String> normalized = new LinkedHashSet<>();
+        normalized.add(ROLE_USER);
+        normalized.addAll(roles);
+        return String.join(",", normalized);
+    }
+
     public static boolean hasAnyRole(String roleExpression, Collection<String> requiredRoles) {
         if (requiredRoles == null || requiredRoles.isEmpty()) {
             return false;

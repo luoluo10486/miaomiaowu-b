@@ -6,6 +6,8 @@ import java.util.List;
 
 public record QqChatTranscript(
         String sourceFileName,
+        String platform,
+        String docType,
         String groupName,
         String chatType,
         LocalDateTime exportedAt,

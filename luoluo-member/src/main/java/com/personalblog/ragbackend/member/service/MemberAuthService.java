@@ -1,6 +1,7 @@
 package com.personalblog.ragbackend.member.service;
 
 import com.personalblog.ragbackend.common.auth.dto.AuthSessionResult;
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.member.domain.MemberUser;
 import com.personalblog.ragbackend.member.dto.auth.MemberLoginRequest;
 import com.personalblog.ragbackend.member.dto.auth.MemberLoginResponse;
@@ -64,7 +65,7 @@ public class MemberAuthService {
                         user.getDisplayName(),
                         user.getPhone(),
                         user.getEmail(),
-                        user.getUserType()
+                        RoleUtils.normalizeUserTypeExpression(user.getUserType())
                 )
         );
     }

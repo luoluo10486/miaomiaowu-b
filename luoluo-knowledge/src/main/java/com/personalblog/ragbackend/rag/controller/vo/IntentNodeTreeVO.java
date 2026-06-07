@@ -13,6 +13,7 @@ import java.util.List;
 @Builder
 public class IntentNodeTreeVO {
     private String id;
+    private String kbId;
     private String intentCode;
     private String name;
     private Integer level;

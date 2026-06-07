@@ -6,7 +6,7 @@ import java.util.Map;
 public enum ChunkingMode {
     FIXED_SIZE("fixed_size", "Fixed size", true),
     STRUCTURE_AWARE("structure_aware", "Structure aware", true),
-    CHAT_QQ_WINDOW("chat_qq_window", "QQ chat window", true);
+    CHAT_QQ_WINDOW("chat_window", "Chat window", true);
 
     private final String value;
     private final String label;
@@ -50,6 +50,9 @@ public enum ChunkingMode {
             return STRUCTURE_AWARE;
         }
         String normalized = value.trim().toLowerCase(Locale.ROOT).replace('-', '_');
+        if ("chat_qq_window".equals(normalized)) {
+            return CHAT_QQ_WINDOW;
+        }
         for (ChunkingMode mode : values()) {
             if (mode.value.equalsIgnoreCase(normalized) || mode.name().equalsIgnoreCase(normalized)) {
                 return mode;

@@ -202,15 +202,14 @@ public class MemberAdminUserService {
     }
 
     private String normalizeRoles(String role) {
-        String normalized = RoleUtils.normalizeRoleExpression(trimToNull(role));
-        return normalized == null ? ROLE_USER : normalized;
+        return RoleUtils.normalizeUserTypeExpression(trimToNull(role));
     }
 
     private UserVO toVO(MemberUser entity) {
         UserVO vo = new UserVO();
         vo.setId(String.valueOf(entity.getUserId()));
         vo.setUsername(entity.getUsername());
-        vo.setRole(entity.getUserType());
+        vo.setRole(RoleUtils.normalizeUserTypeExpression(entity.getUserType()));
         vo.setAvatar(null);
         vo.setCreateTime(entity.getCreatedAt());
         vo.setUpdateTime(entity.getUpdatedAt());

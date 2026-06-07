@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class IntentNodeUpdateRequest {
+    private String kbId;
     private String name;
     private Integer level;
     private String parentCode;

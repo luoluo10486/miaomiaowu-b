@@ -64,7 +64,7 @@ public class MemberUserContextConfig implements WebMvcConfigurer {
             loginUser.setUserId(String.valueOf(user.getUserId()));
             loginUser.setUsername(user.getUsername());
             loginUser.setDisplayName(user.getDisplayName());
-            loginUser.setRole(RoleUtils.normalizeRoleExpression(user.getUserType()));
+            loginUser.setRole(RoleUtils.normalizeUserTypeExpression(user.getUserType()));
             UserContext.set(loginUser);
             return true;
         }

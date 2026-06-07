@@ -26,7 +26,7 @@ public class SampleQuestionController {
 
     @GetMapping("/rag/sample-questions")
     public Result<List<SampleQuestionVO>> listSampleQuestions() {
-        return Results.success(sampleQuestionService.listRandomQuestions());
+        return Results.success(sampleQuestionService.listHomepageQuestions());
     }
 
     @GetMapping("/sample-questions")
