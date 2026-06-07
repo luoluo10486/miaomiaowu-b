@@ -23,6 +23,9 @@ import java.util.stream.IntStream;
 @Slf4j
 public class RAGPromptService {
     private static final int MAX_CITATION_EXCERPT_LENGTH = 220;
+    private static final int DEFAULT_MAX_CITATION_COUNT = 3;
+    private static final int BOOSTED_MAX_CITATION_COUNT = 5;
+    private static final double BOOSTED_CITATION_SCORE_THRESHOLD = 0.9D;
 
     private final PromptTemplateLoader promptTemplateLoader;
 
@@ -204,8 +207,9 @@ public class RAGPromptService {
             return "";
         }
 
+        int limit = resolveCitationLimit(chunks);
         List<String> citations = new ArrayList<>();
-        for (int index = 0; index < chunks.size(); index++) {
+        for (int index = 0; index < Math.min(chunks.size(), limit); index++) {
             RetrievedChunk chunk = chunks.get(index);
             Map<String, Object> metadata = chunk == null ? null : chunk.getMetadata();
             citations.add(renderSection("kb-citation-item", Map.of(
@@ -239,7 +243,18 @@ public class RAGPromptService {
                 uniqueChunks.putIfAbsent(key, chunk);
             }
         }
-        return new ArrayList<>(uniqueChunks.values());
+        return uniqueChunks.values().stream()
+                .sorted((left, right) -> Double.compare(scoreOrDefault(right), scoreOrDefault(left)))
+                .toList();
+    }
+
+    private int resolveCitationLimit(List<RetrievedChunk> chunks) {
+        if (CollUtil.isEmpty(chunks)) {
+            return 0;
+        }
+        return scoreOrDefault(chunks.get(0)) >= BOOSTED_CITATION_SCORE_THRESHOLD
+                ? BOOSTED_MAX_CITATION_COUNT
+                : DEFAULT_MAX_CITATION_COUNT;
     }
 
     private String buildChunkKey(RetrievedChunk chunk) {
@@ -269,6 +284,13 @@ public class RAGPromptService {
             return "--";
         }
         return String.format(java.util.Locale.ROOT, "%.4f", score);
+    }
+
+    private double scoreOrDefault(RetrievedChunk chunk) {
+        if (chunk == null || chunk.getScore() == null) {
+            return 0D;
+        }
+        return chunk.getScore();
     }
 
     private String buildExcerpt(String text) {
