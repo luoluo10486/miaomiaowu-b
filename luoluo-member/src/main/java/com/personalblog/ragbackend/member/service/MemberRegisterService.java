@@ -17,7 +17,7 @@ import static org.springframework.http.HttpStatus.CONFLICT;
 
 @Service
 public class MemberRegisterService {
-    private static final String USER_TYPE = "USER";
+    private static final String USER_TYPE = "user";
     private static final String ACTIVE_STATUS = "ACTIVE";
 
     private final MemberUserService memberUserService;

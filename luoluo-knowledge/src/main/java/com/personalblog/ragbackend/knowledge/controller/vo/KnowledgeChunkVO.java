@@ -18,6 +18,7 @@ public class KnowledgeChunkVO {
     private Integer charCount;
     private Integer tokenCount;
     private Integer enabled;
+    private String metadata;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

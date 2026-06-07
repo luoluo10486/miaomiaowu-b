@@ -1,6 +1,7 @@
 package com.personalblog.ragbackend.member.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.member.domain.MemberUser;
 import com.personalblog.ragbackend.member.mapper.MemberUserMapper;
 import org.springframework.stereotype.Service;
@@ -66,10 +67,13 @@ public class MemberUserService {
     }
 
     public MemberUser findAnyAdmin() {
-        return memberUserMapper.selectOne(Wrappers.<MemberUser>lambdaQuery()
-                .eq(MemberUser::getUserType, "ADMIN")
-                .eq(MemberUser::getDeleted, 0)
-                .last("limit 1"));
+        return memberUserMapper.selectList(Wrappers.<MemberUser>lambdaQuery()
+                        .eq(MemberUser::getDeleted, 0)
+                        .eq(MemberUser::getStatus, ACTIVE))
+                .stream()
+                .filter(user -> RoleUtils.hasAnyRole(user.getUserType(), java.util.List.of(RoleUtils.ROLE_SUPER_ADMIN)))
+                .findFirst()
+                .orElse(null);
     }
 
     public boolean existsByUsername(String username) {

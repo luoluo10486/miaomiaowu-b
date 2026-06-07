@@ -1,6 +1,7 @@
 package com.personalblog.ragbackend.member.config;
 
 import cn.dev33.satoken.stp.StpInterface;
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.member.domain.MemberUser;
 import com.personalblog.ragbackend.member.service.MemberUserService;
 import org.springframework.stereotype.Component;
@@ -8,7 +9,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 @Component
 public class MemberSaTokenRoleConfig implements StpInterface {
@@ -33,11 +33,7 @@ public class MemberSaTokenRoleConfig implements StpInterface {
         if (user == null || !StringUtils.hasText(user.getUserType())) {
             return List.of();
         }
-        String role = user.getUserType().trim();
-        List<String> roles = new ArrayList<>();
-        roles.add(role);
-        roles.add(role.toLowerCase(Locale.ROOT));
-        return roles.stream().distinct().toList();
+        return new ArrayList<>(RoleUtils.parseRoles(user.getUserType()));
     }
 
     private Long parseUserId(Object loginId) {

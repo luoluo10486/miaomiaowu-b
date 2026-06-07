@@ -6,6 +6,7 @@ import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeBaseCre
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeBaseDO;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeBaseMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeDocumentMapper;
+import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,11 +30,14 @@ class KnowledgeBaseServiceImplTest {
     @Mock
     private KnowledgeDocumentMapper knowledgeDocumentMapper;
 
+    @Mock
+    private KnowledgeBaseAccessService knowledgeBaseAccessService;
+
     private KnowledgeBaseServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new KnowledgeBaseServiceImpl(knowledgeBaseMapper, knowledgeDocumentMapper);
+        service = new KnowledgeBaseServiceImpl(knowledgeBaseMapper, knowledgeDocumentMapper, knowledgeBaseAccessService);
         LoginUser user = new LoginUser();
         user.setUserId("42");
         UserContext.set(user);

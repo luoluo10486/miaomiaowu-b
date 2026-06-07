@@ -66,6 +66,8 @@ public class LuoluoAdminApplication {
         String baseUrl = "http://localhost:" + port + accessPath;
         String externalBaseUrl = "http://" + ip + ":" + port + accessPath;
         String startupDuration = formatDuration(System.currentTimeMillis() - startTime);
+        String rocketMqConsole = env.getProperty("app.console.rocketmq", "http://127.0.0.1:8082");
+        String rustFsConsole = env.getProperty("app.console.rustfs", "http://localhost:9001");
 
         String vectorType = env.getProperty("app.knowledge.vector.type", "pg");
         String pgSchema = env.getProperty("app.knowledge.vector.pg.schema", "public");
@@ -73,18 +75,20 @@ public class LuoluoAdminApplication {
 
         log.info("\n\n" +
                         "======================================================================\n" +
-                        " Luoluo Admin Started\n" +
+                        " Luoluo Admin 已启动\n" +
                         "======================================================================\n" +
-                        "  Application:      {}\n" +
-                        "  Profile:          {}\n" +
-                        "  Startup Time:     {}\n" +
+                        "  应用名称:         {}\n" +
+                        "  运行环境:         {}\n" +
+                        "  启动耗时:         {}\n" +
                         "----------------------------------------------------------------------\n" +
-                        "  Backend Local:    {}\n" +
-                        "  Backend IP:       {}\n" +
-                        "  Login API:        {}/auth/login\n" +
+                        "  本地服务:         {}\n" +
+                        "  局域网服务:       {}\n" +
+                        "  登录接口:         {}/auth/login\n" +
+                        "  RocketMQ 控制台:  {}\n" +
+                        "  RustFS 控制台:    {}\n" +
                         "----------------------------------------------------------------------\n" +
-                        "  Vector Type:      {}\n" +
-                        "  Vector Table:     {}.{}\n" +
+                        "  向量类型:         {}\n" +
+                        "  向量表:           {}.{}\n" +
                         "======================================================================\n",
                 appName,
                 profile,
@@ -92,6 +96,8 @@ public class LuoluoAdminApplication {
                 baseUrl,
                 externalBaseUrl,
                 baseUrl,
+                rocketMqConsole,
+                rustFsConsole,
                 vectorType,
                 pgSchema,
                 pgTable

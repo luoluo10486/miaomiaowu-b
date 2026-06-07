@@ -311,7 +311,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     private Map<String, Object> buildVectorMetadata(KnowledgeDocumentDO document,
                                                     KnowledgeBaseDO kbDO,
                                                     KnowledgeChunkDO chunk) {
-        Map<String, Object> metadata = new HashMap<>();
+        Map<String, Object> metadata = new HashMap<>(readJsonMap(chunk.getMetadata()));
         String chunkId = String.valueOf(chunk.getId());
         String documentId = String.valueOf(document.getId());
         String knowledgeBaseId = String.valueOf(document.getKbId());
@@ -331,7 +331,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         metadata.put("sourceUrl", document.getFileUrl());
         metadata.put("chunkIndex", chunk.getChunkIndex());
         metadata.put("chunk_index", chunk.getChunkIndex());
-        metadata.put("sectionTitle", "");
+        metadata.putIfAbsent("sectionTitle", "");
         return metadata;
     }
 
@@ -414,6 +414,19 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         }
     }
 
+    private Map<String, Object> readJsonMap(String json) {
+        if (!StringUtils.hasText(json)) {
+            return Map.of();
+        }
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = objectMapper.readValue(json, Map.class);
+            return result == null ? Map.of() : result;
+        } catch (Exception ignored) {
+            return Map.of();
+        }
+    }
+
     private String sha256Hex(String content) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -437,6 +450,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         vo.setId(String.valueOf(chunk.getId()));
         vo.setKbId(String.valueOf(chunk.getKbId()));
         vo.setDocId(String.valueOf(chunk.getDocId()));
+        vo.setMetadata(chunk.getMetadata());
         vo.setCreateTime(chunk.getCreatedAt());
         vo.setUpdateTime(chunk.getUpdatedAt());
         return vo;

@@ -73,7 +73,8 @@ public class StructureAwareChunkingStrategy implements ChunkingStrategy {
                     currentSection,
                     finalized,
                     finalized.length(),
-                    overlapFromPrevious
+                    overlapFromPrevious,
+                    java.util.Map.of()
             ));
             lastFinalizedContent = finalized;
 
@@ -101,7 +102,8 @@ public class StructureAwareChunkingStrategy implements ChunkingStrategy {
                     currentSection,
                     finalized,
                     finalized.length(),
-                    overlapFromPrevious
+                    overlapFromPrevious,
+                    java.util.Map.of()
             ));
         }
 

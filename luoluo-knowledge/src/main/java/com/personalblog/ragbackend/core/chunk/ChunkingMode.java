@@ -4,8 +4,9 @@ import java.util.Locale;
 import java.util.Map;
 
 public enum ChunkingMode {
-    FIXED_SIZE("fixed_size", "固定大小", true),
-    STRUCTURE_AWARE("structure_aware", "结构感知", true);
+    FIXED_SIZE("fixed_size", "Fixed size", true),
+    STRUCTURE_AWARE("structure_aware", "Structure aware", true),
+    CHAT_QQ_WINDOW("chat_qq_window", "QQ chat window", true);
 
     private final String value;
     private final String label;
@@ -33,6 +34,14 @@ public enum ChunkingMode {
         return switch (this) {
             case FIXED_SIZE -> Map.of("chunkSize", 512, "overlapSize", 128);
             case STRUCTURE_AWARE -> Map.of("targetChars", 1400, "overlapChars", 0, "maxChars", 1800, "minChars", 600);
+            case CHAT_QQ_WINDOW -> Map.of(
+                    "minMessages", 6,
+                    "maxMessages", 12,
+                    "overlapMessages", 2,
+                    "targetChars", 900,
+                    "maxChars", 1200,
+                    "splitGapMinutes", 30
+            );
         };
     }
 

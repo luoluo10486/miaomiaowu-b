@@ -2,10 +2,8 @@ package com.personalblog.ragbackend.rag.core.retrieve.channel;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.personalblog.ragbackend.infra.convention.RetrievedChunk;
-import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeBaseDO;
-import com.personalblog.ragbackend.knowledge.mapper.KnowledgeBaseMapper;
+import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseAccessService;
 import com.personalblog.ragbackend.knowledge.service.vector.KnowledgeVectorSpaceResolver;
 import com.personalblog.ragbackend.rag.config.SearchChannelProperties;
 import com.personalblog.ragbackend.rag.core.intent.NodeScore;
@@ -25,17 +23,17 @@ import java.util.concurrent.Executor;
 @Component
 public class VectorGlobalSearchChannel implements SearchChannel {
     private final SearchChannelProperties properties;
-    private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
     private final KnowledgeVectorSpaceResolver knowledgeVectorSpaceResolver;
     private final CollectionParallelRetriever parallelRetriever;
 
     public VectorGlobalSearchChannel(RetrieverService retrieverService,
                                      SearchChannelProperties properties,
-                                     KnowledgeBaseMapper knowledgeBaseMapper,
+                                     KnowledgeBaseAccessService knowledgeBaseAccessService,
                                      KnowledgeVectorSpaceResolver knowledgeVectorSpaceResolver,
                                      @Qualifier("ragContextExecutor") Executor executor) {
         this.properties = properties;
-        this.knowledgeBaseMapper = knowledgeBaseMapper;
+        this.knowledgeBaseAccessService = knowledgeBaseAccessService;
         this.knowledgeVectorSpaceResolver = knowledgeVectorSpaceResolver;
         this.parallelRetriever = new CollectionParallelRetriever(retrieverService, executor);
     }
@@ -144,20 +142,13 @@ public class VectorGlobalSearchChannel implements SearchChannel {
         }
         if (StrUtil.isNotBlank(baseCode)) {
             String collectionName = knowledgeVectorSpaceResolver.resolve(baseCode).collectionName();
-            return StrUtil.isNotBlank(collectionName) ? List.of(collectionName) : List.of();
+            if (StrUtil.isNotBlank(collectionName) && knowledgeBaseAccessService.canReadByCollectionName(collectionName)) {
+                return List.of(collectionName);
+            }
+            return List.of();
         }
 
-        Set<String> collections = new HashSet<>();
-        List<KnowledgeBaseDO> knowledgeBases = knowledgeBaseMapper.selectList(
-                Wrappers.lambdaQuery(KnowledgeBaseDO.class)
-                        .select(KnowledgeBaseDO::getCollectionName)
-                        .eq(KnowledgeBaseDO::getDeleted, 0)
-        );
-        for (KnowledgeBaseDO knowledgeBase : knowledgeBases) {
-            if (knowledgeBase != null && StrUtil.isNotBlank(knowledgeBase.getCollectionName())) {
-                collections.add(knowledgeBase.getCollectionName());
-            }
-        }
+        Set<String> collections = new HashSet<>(knowledgeBaseAccessService.readableCollectionNames());
         return new ArrayList<>(collections);
     }
 

@@ -1,6 +1,7 @@
 package com.personalblog.ragbackend.member.config;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.common.context.LoginUser;
 import com.personalblog.ragbackend.common.context.UserContext;
 import com.personalblog.ragbackend.member.domain.MemberUser;
@@ -63,7 +64,7 @@ public class MemberUserContextConfig implements WebMvcConfigurer {
             loginUser.setUserId(String.valueOf(user.getUserId()));
             loginUser.setUsername(user.getUsername());
             loginUser.setDisplayName(user.getDisplayName());
-            loginUser.setRole(user.getUserType());
+            loginUser.setRole(RoleUtils.normalizeRoleExpression(user.getUserType()));
             UserContext.set(loginUser);
             return true;
         }

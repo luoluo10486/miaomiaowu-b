@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @EnableConfigurationProperties(MemberAdminBootstrapProperties.class)
 public class MemberAdminBootstrapRunner implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(MemberAdminBootstrapRunner.class);
-    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_ADMIN = "superadmin";
     private static final String STATUS_ACTIVE = "ACTIVE";
 
     private final MemberUserService memberUserService;

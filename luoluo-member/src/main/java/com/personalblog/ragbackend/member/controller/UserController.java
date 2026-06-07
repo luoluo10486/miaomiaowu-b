@@ -2,6 +2,7 @@ package com.personalblog.ragbackend.member.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.common.context.LoginUser;
 import com.personalblog.ragbackend.common.context.UserContext;
 import com.personalblog.ragbackend.common.satoken.annotation.MemberLoginRequired;
@@ -44,26 +45,26 @@ public class UserController {
 
     @GetMapping("/users")
     public Result<IPage<UserVO>> pageQuery(UserPageRequest requestParam) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         return Results.success(memberAdminUserService.pageQuery(requestParam));
     }
 
     @PostMapping("/users")
     public Result<String> create(@RequestBody UserCreateRequest requestParam) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         return Results.success(memberAdminUserService.create(requestParam));
     }
 
     @PutMapping("/users/{id}")
     public Result<Void> update(@PathVariable String id, @RequestBody UserUpdateRequest requestParam) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         memberAdminUserService.update(id, requestParam);
         return Results.success();
     }
 
     @DeleteMapping("/users/{id}")
     public Result<Void> delete(@PathVariable String id) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         memberAdminUserService.delete(id);
         return Results.success();
     }

@@ -6,9 +6,13 @@ import com.personalblog.ragbackend.common.web.domain.Results;
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeDocumentPageRequest;
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeDocumentUpdateRequest;
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeDocumentUploadRequest;
+import com.personalblog.ragbackend.knowledge.controller.request.QqChatImportRequest;
+import com.personalblog.ragbackend.knowledge.controller.vo.ChatImportSummaryVO;
 import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeDocumentChunkLogVO;
 import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeDocumentSearchVO;
 import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeDocumentVO;
+import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseAccessService;
+import com.personalblog.ragbackend.knowledge.service.KnowledgeChatImportService;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeDocumentService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +41,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class KnowledgeDocumentController {
     private final KnowledgeDocumentService knowledgeDocumentService;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
+    private final KnowledgeChatImportService knowledgeChatImportService;
 
     @PostMapping(value = "/knowledge-base/{kb-id}/docs/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<KnowledgeDocumentVO> upload(@PathVariable("kb-id") String kbId,
@@ -45,10 +51,23 @@ public class KnowledgeDocumentController {
         return Results.success(knowledgeDocumentService.upload(kbId, requestParam, file));
     }
 
+    @PostMapping(value = "/knowledge-base/{kb-id}/chat-import/qq", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Result<ChatImportSummaryVO> importQqChatTranscript(@PathVariable("kb-id") String kbId,
+                                                              @RequestPart("file") MultipartFile file,
+                                                              @ModelAttribute QqChatImportRequest requestParam) {
+        return Results.success(knowledgeChatImportService.importQqChatTranscript(kbId, requestParam, file));
+    }
+
     @PostMapping("/knowledge-base/docs/{doc-id}/chunk")
     public Result<Void> startChunk(@PathVariable("doc-id") String docId) {
+        knowledgeBaseAccessService.assertManageableDocument(docId);
         knowledgeDocumentService.startChunk(docId);
         return Results.success();
+    }
+
+    @PostMapping("/knowledge-base/{kb-id}/docs/chunk-all")
+    public Result<Integer> startChunkAll(@PathVariable("kb-id") String kbId) {
+        return Results.success(knowledgeDocumentService.startChunkByKnowledgeBase(kbId));
     }
 
     @DeleteMapping("/knowledge-base/docs/{doc-id}")

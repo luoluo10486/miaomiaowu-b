@@ -44,7 +44,8 @@ public class FixedSizeChunkingStrategy implements ChunkingStrategy {
                         null,
                         content,
                         content.length(),
-                        start > 0 && options.overlapSize() > 0
+                        start > 0 && options.overlapSize() > 0,
+                        java.util.Map.of()
                 ));
             }
 

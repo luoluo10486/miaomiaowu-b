@@ -15,6 +15,7 @@ import java.util.List;
 public interface KnowledgeDocumentService {
     KnowledgeDocumentVO upload(String kbId, KnowledgeDocumentUploadRequest requestParam, MultipartFile file);
     void startChunk(String docId);
+    int startChunkByKnowledgeBase(String kbId);
     void executeChunk(String docId);
     void delete(String docId);
     KnowledgeDocumentVO get(String docId);

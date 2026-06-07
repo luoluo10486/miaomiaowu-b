@@ -3,6 +3,7 @@ package com.personalblog.ragbackend.member.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.common.context.LoginUser;
 import com.personalblog.ragbackend.common.context.UserContext;
 import com.personalblog.ragbackend.member.domain.MemberUser;
@@ -18,8 +19,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class MemberAdminUserService {
     private static final String DEFAULT_ADMIN_USERNAME = "admin";
-    private static final String ROLE_ADMIN = "ADMIN";
-    private static final String ROLE_USER = "USER";
+    private static final String ROLE_ADMIN = "superadmin";
+    private static final String ROLE_USER = "user";
     private static final String STATUS_ACTIVE = "ACTIVE";
 
     private final MemberUserMapper memberUserMapper;
@@ -69,7 +70,7 @@ public class MemberAdminUserService {
         MemberUser entity = new MemberUser();
         entity.setUsername(username);
         entity.setPasswordHash(passwordEncoder.encode(password));
-        entity.setUserType(normalizeRole(request.getRole()));
+        entity.setUserType(normalizeRoles(request.getRole()));
         entity.setStatus(STATUS_ACTIVE);
         entity.setDisplayName(username);
         memberUserMapper.insert(entity);
@@ -100,7 +101,7 @@ public class MemberAdminUserService {
             }
         }
         if (request.getRole() != null) {
-            entity.setUserType(normalizeRole(request.getRole()));
+            entity.setUserType(normalizeRoles(request.getRole()));
         }
         if (request.getPassword() != null) {
             String password = trimToNull(request.getPassword());
@@ -198,6 +199,11 @@ public class MemberAdminUserService {
             return ROLE_USER;
         }
         throw new IllegalArgumentException("角色类型不合法");
+    }
+
+    private String normalizeRoles(String role) {
+        String normalized = RoleUtils.normalizeRoleExpression(trimToNull(role));
+        return normalized == null ? ROLE_USER : normalized;
     }
 
     private UserVO toVO(MemberUser entity) {

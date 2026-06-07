@@ -1,6 +1,7 @@
 package com.personalblog.ragbackend.admin.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.admin.controller.vo.DashboardOverviewVO;
 import com.personalblog.ragbackend.admin.controller.vo.DashboardPerformanceVO;
 import com.personalblog.ragbackend.admin.controller.vo.DashboardTrendsVO;
@@ -23,13 +24,13 @@ public class DashboardController {
 
     @GetMapping("/overview")
     public Result<DashboardOverviewVO> overview(@RequestParam(required = false) String window) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         return Results.success(dashboardService.loadOverview(window));
     }
 
     @GetMapping("/performance")
     public Result<DashboardPerformanceVO> performance(@RequestParam(required = false) String window) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         return Results.success(dashboardService.loadPerformance(window));
     }
 
@@ -37,7 +38,7 @@ public class DashboardController {
     public Result<DashboardTrendsVO> trends(@RequestParam String metric,
                                             @RequestParam(required = false) String window,
                                             @RequestParam(required = false) String granularity) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         return Results.success(dashboardService.loadTrends(metric, window, granularity));
     }
 }

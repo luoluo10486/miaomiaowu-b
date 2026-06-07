@@ -6,5 +6,8 @@ import lombok.Data;
 public class KnowledgeBaseUpdateRequest {
     private String id;
     private String name;
+    private String description;
     private String embeddingModel;
+    private String visibility;
+    private String allowedRoles;
 }

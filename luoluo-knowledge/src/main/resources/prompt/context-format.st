@@ -48,6 +48,20 @@
 {body}
 </documents>
 
+--- section: kb-citation-item ---
+<citation index="{index}">
+<title>{title}</title>
+<source-url>{source_url}</source-url>
+<chunk-index>{chunk_index}</chunk-index>
+<score>{score}</score>
+<excerpt>{excerpt}</excerpt>
+</citation>
+
+--- section: kb-citations ---
+<citations>
+{items}
+</citations>
+
 --- section: mcp-evidence ---
 <tool-data>
 {body}

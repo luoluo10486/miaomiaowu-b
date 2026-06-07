@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.personalblog.ragbackend.common.context.UserContext;
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeBaseCreateRequest;
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeBasePageRequest;
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeBaseUpdateRequest;
@@ -14,6 +15,7 @@ import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeBaseDO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeBaseMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeDocumentMapper;
+import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseAccessService;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,11 +32,14 @@ import java.util.stream.Collectors;
 public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
 
     public KnowledgeBaseServiceImpl(KnowledgeBaseMapper knowledgeBaseMapper,
-                                    KnowledgeDocumentMapper knowledgeDocumentMapper) {
+                                    KnowledgeDocumentMapper knowledgeDocumentMapper,
+                                    KnowledgeBaseAccessService knowledgeBaseAccessService) {
         this.knowledgeBaseMapper = knowledgeBaseMapper;
         this.knowledgeDocumentMapper = knowledgeDocumentMapper;
+        this.knowledgeBaseAccessService = knowledgeBaseAccessService;
     }
 
     @Override
@@ -52,13 +57,20 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         String embeddingModel = StringUtils.hasText(requestParam.getEmbeddingModel())
                 ? requestParam.getEmbeddingModel().trim()
                 : "Qwen/Qwen3-Embedding-8B";
+        String allowedRoles = normalizeAllowedRoles(requestParam.getAllowedRoles());
+        String visibility = resolveVisibility(requestParam.getVisibility(), allowedRoles);
+        validateRoleScope(visibility, allowedRoles);
         log.info("Creating knowledge base: name='{}', collection='{}', embedding='{}'", name, collectionName, embeddingModel);
         assertCollectionAvailable(collectionName, null);
 
         KnowledgeBaseDO entity = new KnowledgeBaseDO();
         entity.setName(name);
+        entity.setDescription(blankToNull(requestParam.getDescription()));
         entity.setEmbeddingModel(embeddingModel);
         entity.setCollectionName(collectionName);
+        entity.setVisibility(visibility);
+        entity.setStatus("ACTIVE");
+        entity.setAllowedRoles(allowedRoles);
         entity.setOwnerUserId(parseUserId(UserContext.getUserId()));
         entity.setCreatedBy(parseUserId(UserContext.getUserId()));
         entity.setUpdatedBy(parseUserId(UserContext.getUserId()));
@@ -80,6 +92,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     @Transactional
     public void update(KnowledgeBaseUpdateRequest requestParam) {
         KnowledgeBaseDO entity = requireKnowledgeBase(parseId(requestParam.getId()));
+        knowledgeBaseAccessService.assertManageable(entity);
         if (StringUtils.hasText(requestParam.getName())) {
             String name = requestParam.getName().trim().replaceAll("\\s+", "");
             long nameCount = knowledgeBaseMapper.selectCount(new LambdaQueryWrapper<KnowledgeBaseDO>()
@@ -104,6 +117,14 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             }
             entity.setEmbeddingModel(embeddingModel);
         }
+        if (requestParam.getDescription() != null) {
+            entity.setDescription(blankToNull(requestParam.getDescription()));
+        }
+        String allowedRoles = requestParam.getAllowedRoles() == null ? entity.getAllowedRoles() : normalizeAllowedRoles(requestParam.getAllowedRoles());
+        String visibility = resolveVisibility(requestParam.getVisibility() == null ? entity.getVisibility() : requestParam.getVisibility(), allowedRoles);
+        validateRoleScope(visibility, allowedRoles);
+        entity.setVisibility(visibility);
+        entity.setAllowedRoles(allowedRoles);
         entity.setUpdatedBy(parseUserId(UserContext.getUserId()));
         knowledgeBaseMapper.updateById(entity);
     }
@@ -112,6 +133,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     @Transactional
     public void rename(String kbId, KnowledgeBaseUpdateRequest requestParam) {
         KnowledgeBaseDO entity = requireKnowledgeBase(parseId(kbId));
+        knowledgeBaseAccessService.assertManageable(entity);
         if (!StringUtils.hasText(requestParam.getName())) {
             throw new IllegalArgumentException("knowledge base name is required");
         }
@@ -132,6 +154,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     @Transactional
     public void delete(String kbId) {
         KnowledgeBaseDO entity = requireKnowledgeBase(parseId(kbId));
+        knowledgeBaseAccessService.assertManageable(entity);
         long documentCount = knowledgeDocumentMapper.selectCount(new LambdaQueryWrapper<KnowledgeDocumentDO>()
                 .eq(KnowledgeDocumentDO::getKbId, entity.getId())
                 .eq(KnowledgeDocumentDO::getDeleted, 0));
@@ -144,6 +167,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     @Override
     public KnowledgeBaseVO queryById(String kbId) {
         KnowledgeBaseDO entity = requireKnowledgeBase(parseId(kbId));
+        knowledgeBaseAccessService.assertReadable(entity);
         KnowledgeBaseVO vo = toView(entity, knowledgeDocumentMapper.selectCount(new LambdaQueryWrapper<KnowledgeDocumentDO>()
                 .eq(KnowledgeDocumentDO::getKbId, entity.getId())
                 .eq(KnowledgeDocumentDO::getDeleted, 0)));
@@ -152,14 +176,22 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
     @Override
     public IPage<KnowledgeBaseVO> pageQuery(KnowledgeBasePageRequest requestParam) {
-        Page<KnowledgeBaseDO> page = new Page<>(requestParam.getCurrent(), requestParam.getSize());
-        IPage<KnowledgeBaseDO> result = knowledgeBaseMapper.selectPage(
-                page,
+        List<KnowledgeBaseDO> visibleKnowledgeBases = knowledgeBaseMapper.selectList(
                 new LambdaQueryWrapper<KnowledgeBaseDO>()
+                        .eq(KnowledgeBaseDO::getDeleted, 0)
                         .like(StringUtils.hasText(requestParam.getName()), KnowledgeBaseDO::getName, requestParam.getName())
                         .orderByDesc(KnowledgeBaseDO::getUpdatedAt)
-        );
-        List<Long> kbIds = result.getRecords().stream().map(KnowledgeBaseDO::getId).toList();
+        ).stream()
+                .filter(knowledgeBaseAccessService::canRead)
+                .toList();
+
+        long current = requestParam.getCurrent() <= 0 ? 1 : requestParam.getCurrent();
+        long size = requestParam.getSize() <= 0 ? 10 : requestParam.getSize();
+        int fromIndex = (int) Math.min((current - 1) * size, visibleKnowledgeBases.size());
+        int toIndex = (int) Math.min(fromIndex + size, visibleKnowledgeBases.size());
+        List<KnowledgeBaseDO> pageRecords = fromIndex >= toIndex ? List.of() : visibleKnowledgeBases.subList(fromIndex, toIndex);
+
+        List<Long> kbIds = pageRecords.stream().map(KnowledgeBaseDO::getId).toList();
         Map<Long, Long> documentCountMap = kbIds.isEmpty()
                 ? Map.of()
                 : knowledgeDocumentMapper.selectList(new LambdaQueryWrapper<KnowledgeDocumentDO>()
@@ -167,14 +199,17 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
                         .eq(KnowledgeDocumentDO::getDeleted, 0))
                 .stream()
                 .collect(Collectors.groupingBy(KnowledgeDocumentDO::getKbId, Collectors.counting()));
-        return result.convert(entity -> {
-            return toView(entity, documentCountMap.getOrDefault(entity.getId(), 0L));
-        });
+        Page<KnowledgeBaseVO> voPage = new Page<>(current, size, visibleKnowledgeBases.size());
+        voPage.setRecords(pageRecords.stream()
+                .map(entity -> toView(entity, documentCountMap.getOrDefault(entity.getId(), 0L)))
+                .toList());
+        return voPage;
     }
 
     private KnowledgeBaseVO toView(KnowledgeBaseDO entity, Long documentCount) {
         KnowledgeBaseVO vo = BeanUtil.toBean(entity, KnowledgeBaseVO.class);
         vo.setId(String.valueOf(entity.getId()));
+        vo.setOwnerUserId(entity.getOwnerUserId() == null ? null : String.valueOf(entity.getOwnerUserId()));
         vo.setDocumentCount(documentCount);
         vo.setCreatedBy(entity.getCreatedBy() == null ? null : String.valueOf(entity.getCreatedBy()));
         vo.setCreateTime(entity.getCreatedAt() == null ? null : java.util.Date.from(entity.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant()));
@@ -211,6 +246,47 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         if (existing != null && !existing.getId().equals(currentKbId)) {
             throw new IllegalArgumentException("collection name already exists");
         }
+    }
+
+    private String normalizeVisibility(String visibility) {
+        if (!StringUtils.hasText(visibility)) {
+            return "PRIVATE";
+        }
+        String normalized = visibility.trim().toUpperCase(Locale.ROOT);
+        return switch (normalized) {
+            case "PUBLIC", "PRIVATE", "ROLES" -> normalized;
+            default -> throw new IllegalArgumentException("unsupported knowledge base visibility");
+        };
+    }
+
+    private String resolveVisibility(String visibility, String allowedRoles) {
+        String normalizedVisibility = StringUtils.hasText(visibility) ? normalizeVisibility(visibility) : null;
+        if (!StringUtils.hasText(normalizedVisibility)) {
+            return StringUtils.hasText(allowedRoles) ? "ROLES" : "PRIVATE";
+        }
+        if ("PRIVATE".equals(normalizedVisibility) && StringUtils.hasText(allowedRoles)) {
+            return "ROLES";
+        }
+        return normalizedVisibility;
+    }
+
+    private String normalizeAllowedRoles(String allowedRoles) {
+        String normalized = RoleUtils.normalizeRoleExpression(blankToNull(allowedRoles));
+        return normalized;
+    }
+
+    private void validateRoleScope(String visibility, String allowedRoles) {
+        if ("ROLES".equalsIgnoreCase(visibility) && !StringUtils.hasText(allowedRoles)) {
+            throw new IllegalArgumentException("allowed roles are required when visibility is ROLES");
+        }
+    }
+
+    private String blankToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private String resolveCollectionName(String name, String requestedCollectionName) {

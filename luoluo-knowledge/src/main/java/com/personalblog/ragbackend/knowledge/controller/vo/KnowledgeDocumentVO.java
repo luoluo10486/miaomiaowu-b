@@ -26,6 +26,7 @@ public class KnowledgeDocumentVO {
     private String chunkConfig;
     private String pipelineId;
     private String status;
+    private String metadataJson;
     private String createdBy;
     private String updatedBy;
     private LocalDateTime createTime;

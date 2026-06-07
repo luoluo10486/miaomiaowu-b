@@ -8,6 +8,7 @@ import com.personalblog.ragbackend.rag.core.intent.NodeScore;
 import com.personalblog.ragbackend.rag.core.intent.NodeScoreFilters;
 import com.personalblog.ragbackend.rag.core.retrieve.RetrieverService;
 import com.personalblog.ragbackend.rag.core.retrieve.channel.strategy.IntentParallelRetriever;
+import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseAccessService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -19,12 +20,15 @@ import java.util.concurrent.Executor;
 @Component
 public class IntentDirectedSearchChannel implements SearchChannel {
     private final SearchChannelProperties properties;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
     private final IntentParallelRetriever parallelRetriever;
 
     public IntentDirectedSearchChannel(RetrieverService retrieverService,
                                        SearchChannelProperties properties,
+                                       KnowledgeBaseAccessService knowledgeBaseAccessService,
                                        @Qualifier("ragContextExecutor") Executor executor) {
         this.properties = properties;
+        this.knowledgeBaseAccessService = knowledgeBaseAccessService;
         this.parallelRetriever = new IntentParallelRetriever(retrieverService, executor);
     }
 
@@ -112,6 +116,9 @@ public class IntentDirectedSearchChannel implements SearchChannel {
         }
         List<NodeScore> allScores = context.getIntents().stream()
                 .flatMap(subQuestionIntent -> subQuestionIntent.nodeScores().stream())
+                .filter(nodeScore -> nodeScore != null
+                        && nodeScore.node() != null
+                        && knowledgeBaseAccessService.canRead(nodeScore.node().getKbId()))
                 .toList();
         return NodeScoreFilters.kb(allScores, properties.getChannels().getIntentDirected().getMinIntentScore());
     }
