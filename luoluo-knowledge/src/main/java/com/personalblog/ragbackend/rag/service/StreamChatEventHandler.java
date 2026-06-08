@@ -9,6 +9,7 @@ import com.personalblog.ragbackend.knowledge.dto.stream.CompletionPayload;
 import com.personalblog.ragbackend.knowledge.dto.stream.MessageDelta;
 import com.personalblog.ragbackend.knowledge.dto.stream.MetaPayload;
 import com.personalblog.ragbackend.knowledge.enums.SseEventType;
+import com.personalblog.ragbackend.rag.util.MarkdownContentSanitizer;
 
 public class StreamChatEventHandler implements StreamCallback {
     private static final String TYPE_THINK = "think";
@@ -75,11 +76,15 @@ public class StreamChatEventHandler implements StreamCallback {
         if (taskManager.isCancelled(taskId) || StrUtil.isBlank(content)) {
             return;
         }
+        String sanitized = MarkdownContentSanitizer.stripImages(content);
+        if (StrUtil.isBlank(sanitized)) {
+            return;
+        }
         if (thinkingStartMs > 0 && thinkingDurationSeconds == 0) {
             thinkingDurationSeconds = Math.max(1, Math.round((System.currentTimeMillis() - thinkingStartMs) / 1000.0f));
         }
-        answer.append(content);
-        sendChunked(TYPE_RESPONSE, content);
+        answer.append(sanitized);
+        sendChunked(TYPE_RESPONSE, sanitized);
     }
 
     @Override
@@ -87,11 +92,15 @@ public class StreamChatEventHandler implements StreamCallback {
         if (taskManager.isCancelled(taskId) || StrUtil.isBlank(content)) {
             return;
         }
+        String sanitized = MarkdownContentSanitizer.stripImages(content);
+        if (StrUtil.isBlank(sanitized)) {
+            return;
+        }
         if (thinkingStartMs == 0L) {
             thinkingStartMs = System.currentTimeMillis();
         }
-        thinking.append(content);
-        sendChunked(TYPE_THINK, content);
+        thinking.append(sanitized);
+        sendChunked(TYPE_THINK, sanitized);
     }
 
     @Override

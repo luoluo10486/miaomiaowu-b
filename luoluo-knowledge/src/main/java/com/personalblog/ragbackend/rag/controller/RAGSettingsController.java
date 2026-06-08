@@ -16,6 +16,7 @@ import com.personalblog.ragbackend.rag.controller.vo.SystemSettingsVO.QueryRewri
 import com.personalblog.ragbackend.rag.controller.vo.SystemSettingsVO.RagSettings;
 import com.personalblog.ragbackend.rag.controller.vo.SystemSettingsVO.RateLimitSettings;
 import com.personalblog.ragbackend.rag.controller.vo.SystemSettingsVO.UploadSettings;
+import com.personalblog.ragbackend.rag.service.quota.DailyQuestionQuotaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
@@ -38,6 +39,7 @@ public class RAGSettingsController {
     private final RAGRateLimitProperties ragRateLimitProperties;
     private final MemoryProperties memoryProperties;
     private final AIModelProperties aiModelProperties;
+    private final DailyQuestionQuotaService dailyQuestionQuotaService;
 
     @Value("${spring.servlet.multipart.max-file-size:50MB}")
     private DataSize maxFileSize;
@@ -67,6 +69,7 @@ public class RAGSettingsController {
                                         .leaseSeconds(ragRateLimitProperties.getGlobalLeaseSeconds())
                                         .pollIntervalMs(ragRateLimitProperties.getGlobalPollIntervalMs())
                                         .build())
+                                .dailyQuestionLimit(dailyQuestionQuotaService.getDailyQuestionLimit())
                                 .build())
                         .memory(toMemorySettings())
                         .build())

@@ -8,6 +8,7 @@ import com.personalblog.ragbackend.rag.core.prompt.PromptTemplateLoader;
 import com.personalblog.ragbackend.rag.constant.RAGConstant;
 import com.personalblog.ragbackend.rag.core.intent.IntentNode;
 import com.personalblog.ragbackend.rag.core.intent.NodeScore;
+import com.personalblog.ragbackend.rag.util.MarkdownContentSanitizer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -294,11 +295,12 @@ public class RAGPromptService {
     }
 
     private String buildExcerpt(String text) {
-        if (StrUtil.isBlank(text)) {
+        String sanitized = MarkdownContentSanitizer.stripImages(text);
+        if (StrUtil.isBlank(sanitized)) {
             return "未提供片段";
         }
 
-        String normalized = text.trim().replaceAll("\\s+", " ");
+        String normalized = sanitized.trim().replaceAll("\\s+", " ");
         if (normalized.length() <= MAX_CITATION_EXCERPT_LENGTH) {
             return normalized;
         }

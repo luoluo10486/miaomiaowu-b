@@ -5,6 +5,8 @@
 -- Description: Drop RAG schema created by B20260423__rag_schema.sql.
 -- ============================================================
 
+drop table if exists t_rag_question_quota_audit;
+drop table if exists t_rag_question_quota_config;
 drop table if exists t_rag_trace_node;
 drop table if exists t_rag_trace_run;
 drop table if exists t_query_term_mapping;

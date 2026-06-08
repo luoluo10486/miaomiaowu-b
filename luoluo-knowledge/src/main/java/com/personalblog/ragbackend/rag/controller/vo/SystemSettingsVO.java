@@ -234,9 +234,15 @@ public class SystemSettingsVO {
     @Getter
     public static class RateLimitSettings {
         private GlobalRateLimit global;
+        private Integer dailyQuestionLimit;
 
         public RateLimitSettings(GlobalRateLimit global) {
             this.global = global;
+        }
+
+        public RateLimitSettings(GlobalRateLimit global, Integer dailyQuestionLimit) {
+            this.global = global;
+            this.dailyQuestionLimit = dailyQuestionLimit;
         }
 
         public static RateLimitSettingsBuilder builder() {
@@ -245,14 +251,20 @@ public class SystemSettingsVO {
 
         public static class RateLimitSettingsBuilder {
             private GlobalRateLimit global;
+            private Integer dailyQuestionLimit;
 
             public RateLimitSettingsBuilder global(GlobalRateLimit global) {
                 this.global = global;
                 return this;
             }
 
+            public RateLimitSettingsBuilder dailyQuestionLimit(Integer dailyQuestionLimit) {
+                this.dailyQuestionLimit = dailyQuestionLimit;
+                return this;
+            }
+
             public RateLimitSettings build() {
-                return new RateLimitSettings(global);
+                return new RateLimitSettings(global, dailyQuestionLimit);
             }
         }
     }

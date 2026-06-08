@@ -8,6 +8,7 @@ import com.personalblog.ragbackend.rag.config.RagTraceProperties;
 import com.personalblog.ragbackend.rag.dao.entity.RagTraceRunEntity;
 import com.personalblog.ragbackend.rag.service.ratelimit.ChatQueueLimiter;
 import com.personalblog.ragbackend.rag.service.RagTraceRecordService;
+import com.personalblog.ragbackend.rag.service.quota.DailyQuestionQuotaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -33,6 +34,7 @@ public class ChatRateLimitAspect {
     private final ChatQueueLimiter chatQueueLimiter;
     private final RagTraceProperties traceProperties;
     private final RagTraceRecordService traceRecordService;
+    private final DailyQuestionQuotaService dailyQuestionQuotaService;
 
     @Around("@annotation(com.personalblog.ragbackend.rag.aop.ChatRateLimit)")
     public Object limitStreamChat(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -40,6 +42,8 @@ public class ChatRateLimitAspect {
         if (args == null || args.length < 4 || !(args[3] instanceof SseEmitter emitter)) {
             return joinPoint.proceed();
         }
+
+        dailyQuestionQuotaService.assertCanAskCurrentUser();
 
         String question = args[0] instanceof String text ? text : "";
         String conversationId = args[1] instanceof String cid ? cid : null;

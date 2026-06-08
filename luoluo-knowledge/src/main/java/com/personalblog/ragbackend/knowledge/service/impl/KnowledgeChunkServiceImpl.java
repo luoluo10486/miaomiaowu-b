@@ -24,6 +24,7 @@ import com.personalblog.ragbackend.knowledge.domain.enums.DocumentStatus;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeChunkService;
 import com.personalblog.ragbackend.knowledge.service.vector.KnowledgeVectorSpaceResolver;
 import com.personalblog.ragbackend.knowledge.service.vector.VectorStoreService;
+import com.personalblog.ragbackend.rag.util.MarkdownContentSanitizer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -450,6 +451,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         vo.setId(String.valueOf(chunk.getId()));
         vo.setKbId(String.valueOf(chunk.getKbId()));
         vo.setDocId(String.valueOf(chunk.getDocId()));
+        vo.setContent(MarkdownContentSanitizer.stripImages(chunk.getContent()));
         vo.setMetadata(chunk.getMetadata());
         vo.setCreateTime(chunk.getCreatedAt());
         vo.setUpdateTime(chunk.getUpdatedAt());

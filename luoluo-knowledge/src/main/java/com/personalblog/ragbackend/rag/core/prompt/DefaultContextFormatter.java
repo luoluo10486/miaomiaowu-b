@@ -7,6 +7,7 @@ import com.personalblog.ragbackend.rag.core.prompt.PromptTemplateLoader;
 import com.personalblog.ragbackend.rag.constant.RAGConstant;
 import com.personalblog.ragbackend.rag.core.intent.IntentNode;
 import com.personalblog.ragbackend.rag.core.intent.NodeScore;
+import com.personalblog.ragbackend.rag.util.MarkdownContentSanitizer;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.springframework.stereotype.Service;
@@ -174,6 +175,7 @@ public class DefaultContextFormatter implements ContextFormatter {
         return chunks.stream()
                 .limit(topK)
                 .map(RetrievedChunk::getText)
+                .map(MarkdownContentSanitizer::stripImages)
                 .collect(Collectors.joining("\n"));
     }
 
