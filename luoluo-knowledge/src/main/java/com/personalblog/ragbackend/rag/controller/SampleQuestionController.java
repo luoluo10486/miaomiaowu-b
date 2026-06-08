@@ -1,6 +1,8 @@
 package com.personalblog.ragbackend.rag.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.personalblog.ragbackend.common.auth.RoleUtils;
 import com.personalblog.ragbackend.common.web.domain.Result;
 import com.personalblog.ragbackend.common.web.domain.Results;
 import com.personalblog.ragbackend.rag.controller.request.SampleQuestionCreateRequest;
@@ -31,27 +33,32 @@ public class SampleQuestionController {
 
     @GetMapping("/sample-questions")
     public Result<IPage<SampleQuestionVO>> pageQuery(SampleQuestionPageRequest requestParam) {
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         return Results.success(sampleQuestionService.pageQuery(requestParam));
     }
 
     @GetMapping("/sample-questions/{id}")
     public Result<SampleQuestionVO> queryById(@PathVariable String id) {
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         return Results.success(sampleQuestionService.queryById(id));
     }
 
     @PostMapping("/sample-questions")
     public Result<String> create(@RequestBody SampleQuestionCreateRequest requestParam) {
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         return Results.success(sampleQuestionService.create(requestParam));
     }
 
     @PutMapping("/sample-questions/{id}")
     public Result<Void> update(@PathVariable String id, @RequestBody SampleQuestionUpdateRequest requestParam) {
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         sampleQuestionService.update(id, requestParam);
         return Results.success();
     }
 
     @DeleteMapping("/sample-questions/{id}")
     public Result<Void> delete(@PathVariable String id) {
+        StpUtil.checkRole(RoleUtils.ROLE_SUPER_ADMIN);
         sampleQuestionService.delete(id);
         return Results.success();
     }

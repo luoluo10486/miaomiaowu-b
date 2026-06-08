@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.personalblog.ragbackend.framework.exception.ClientException;
+import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseAccessService;
 import com.personalblog.ragbackend.rag.dao.entity.SampleQuestionEntity;
 import com.personalblog.ragbackend.rag.dao.mapper.SampleQuestionMapper;
 import com.personalblog.ragbackend.rag.controller.request.SampleQuestionCreateRequest;
@@ -27,6 +28,7 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
     private static final int DEFAULT_LIMIT = 3;
 
     private final SampleQuestionMapper sampleQuestionMapper;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
 
     @Override
     public String create(SampleQuestionCreateRequest requestParam) {
@@ -104,12 +106,15 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
                         .eq(SampleQuestionEntity::getEnabled, 1)
                         .orderByAsc(SampleQuestionEntity::getSortOrder)
                         .orderByDesc(SampleQuestionEntity::getUpdatedAt)
-                        .last("LIMIT " + DEFAULT_LIMIT)
         );
         if (records == null || records.isEmpty()) {
             return List.of();
         }
-        return records.stream().map(this::toVO).toList();
+        return records.stream()
+                .filter(this::isHomepageQuestionVisible)
+                .limit(DEFAULT_LIMIT)
+                .map(this::toVO)
+                .toList();
     }
 
     private SampleQuestionEntity loadById(String id) {
@@ -132,6 +137,16 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
                 .createTime(toDate(record.getCreatedAt()))
                 .updateTime(toDate(record.getUpdatedAt()))
                 .build();
+    }
+
+    private boolean isHomepageQuestionVisible(SampleQuestionEntity record) {
+        if (record == null) {
+            return false;
+        }
+        if (record.getKbId() == null) {
+            return true;
+        }
+        return knowledgeBaseAccessService.canRead(record.getKbId());
     }
 
     private Long parseId(String id) {
