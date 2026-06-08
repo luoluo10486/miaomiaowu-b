@@ -2,6 +2,7 @@ package com.personalblog.ragbackend.rag.core.intent;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.personalblog.ragbackend.rag.enums.IntentKind;
@@ -322,6 +323,7 @@ public class IntentNode {
         return kind != null && kind == IntentKind.MCP.getCode();
     }
 
+    @JsonIgnore
     public boolean isMcp() {
         return isMCP();
     }

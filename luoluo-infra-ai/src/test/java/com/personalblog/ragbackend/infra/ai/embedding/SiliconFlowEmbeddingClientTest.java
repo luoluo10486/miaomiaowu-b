@@ -31,13 +31,25 @@ class SiliconFlowEmbeddingClientTest {
         HttpResponse<String> response1 = mock(HttpResponse.class);
         @SuppressWarnings("unchecked")
         HttpResponse<String> response2 = mock(HttpResponse.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response3 = mock(HttpResponse.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response4 = mock(HttpResponse.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response5 = mock(HttpResponse.class);
 
         when(response1.statusCode()).thenReturn(200);
-        when(response1.body()).thenReturn(buildOpenAiEmbeddingBody(32, 0));
+        when(response1.body()).thenReturn(buildOpenAiEmbeddingBody(8, 0));
         when(response2.statusCode()).thenReturn(200);
-        when(response2.body()).thenReturn(buildOpenAiEmbeddingBody(1, 32));
+        when(response2.body()).thenReturn(buildOpenAiEmbeddingBody(8, 8));
+        when(response3.statusCode()).thenReturn(200);
+        when(response3.body()).thenReturn(buildOpenAiEmbeddingBody(8, 16));
+        when(response4.statusCode()).thenReturn(200);
+        when(response4.body()).thenReturn(buildOpenAiEmbeddingBody(8, 24));
+        when(response5.statusCode()).thenReturn(200);
+        when(response5.body()).thenReturn(buildOpenAiEmbeddingBody(1, 32));
         when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
-                .thenReturn(response1, response2);
+                .thenReturn(response1, response2, response3, response4, response5);
 
         SiliconFlowEmbeddingClient client = new SiliconFlowEmbeddingClient(
                 httpClient,
@@ -54,7 +66,7 @@ class SiliconFlowEmbeddingClientTest {
         assertThat(embeddings).hasSize(33);
         assertThat(embeddings.get(0)).containsExactly(0.0F, 0.5F);
         assertThat(embeddings.get(32)).containsExactly(32.0F, 32.5F);
-        verify(httpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+        verify(httpClient, times(5)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
     }
 
     private AIModelProperties aiProperties() {
