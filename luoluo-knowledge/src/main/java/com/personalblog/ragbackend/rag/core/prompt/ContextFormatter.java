@@ -7,6 +7,9 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 上下文Formatter接口
+ */
 public interface ContextFormatter {
     String formatKbContext(List<NodeScore> kbIntents, Map<String, List<RetrievedChunk>> rerankedByIntent, int topK);
 

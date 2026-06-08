@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 会话汇总业务对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

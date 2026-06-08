@@ -4,6 +4,9 @@ import cn.hutool.core.util.StrUtil;
 
 import java.util.regex.Pattern;
 
+/**
+ * Markdown内容Sanitizer类
+ */
 public final class MarkdownContentSanitizer {
     private static final Pattern MARKDOWN_IMAGE_PATTERN = Pattern.compile("!\\[[^\\]]*]\\([^\\r\\n]*\\)");
     private static final Pattern HTML_IMAGE_PATTERN = Pattern.compile("(?is)<img\\b[^>]*>");

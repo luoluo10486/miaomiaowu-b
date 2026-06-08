@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.rag.service;
 
 import org.springframework.stereotype.Component;
 
+/**
+ * 流式回调工厂
+ */
 @Component
 public class StreamCallbackFactory {
     public StreamChatEventHandler createChatEventHandler(StreamChatHandlerParams params) {

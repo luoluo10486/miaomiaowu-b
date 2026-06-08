@@ -9,6 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Tika文档解析服务Test类
+ */
 class TikaDocumentParseServiceTest {
 
     private final TikaDocumentParseService tikaDocumentParseService = new TikaDocumentParseService();

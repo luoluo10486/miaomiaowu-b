@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 增强器节点
+ */
 @Component
 public class EnhancerNode implements IngestionNode {
 

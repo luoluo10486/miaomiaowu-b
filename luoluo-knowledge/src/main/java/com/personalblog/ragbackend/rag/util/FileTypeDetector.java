@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.rag.util;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * 文件TypeDetector类
+ */
 public final class FileTypeDetector {
 
     private static final Map<String, String> EXTENSION_MAP = Map.ofEntries(

@@ -20,6 +20,9 @@ import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
+/**
+ * 会员认证服务
+ */
 @Service
 public class MemberAuthService {
     private final Map<String, MemberLoginStrategy> strategyMap;

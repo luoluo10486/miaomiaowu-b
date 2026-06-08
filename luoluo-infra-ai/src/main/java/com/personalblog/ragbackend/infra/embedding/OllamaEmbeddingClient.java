@@ -13,6 +13,9 @@ import java.net.http.HttpClient;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Ollama向量化客户端
+ */
 @Service
 public class OllamaEmbeddingClient extends AbstractOpenAIStyleEmbeddingClient {
 

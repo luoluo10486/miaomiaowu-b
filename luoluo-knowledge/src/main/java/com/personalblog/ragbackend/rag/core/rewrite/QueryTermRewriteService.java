@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+/**
+ * 查询Term改写服务
+ */
 @Service
 public class QueryTermRewriteService {
     private static final String REWRITE_PROMPT_PATH = "prompt/user-question-rewrite.st";

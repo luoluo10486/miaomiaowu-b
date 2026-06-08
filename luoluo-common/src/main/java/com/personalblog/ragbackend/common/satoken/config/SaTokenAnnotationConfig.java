@@ -6,7 +6,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Sa-Token 注解拦截配置，确保登录校验注解生效。
+ * Sa令牌Annotation配置
  */
 @Configuration
 public class SaTokenAnnotationConfig implements WebMvcConfigurer {

@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.common.auth.dto;
 
 /**
- * 会话创建命令，封装通用登录会话落库所需参数。
+ * 认证会话创建Command记录类
  */
 public record AuthSessionCreateCommand(
         Long subjectId,

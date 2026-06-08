@@ -5,6 +5,9 @@ import com.personalblog.ragbackend.rag.service.StreamChatEventHandler;
 
 import java.util.List;
 
+/**
+ * 流式对话上下文
+ */
 public class StreamChatContext {
     private String question;
     private String conversationId;

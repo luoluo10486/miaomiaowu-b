@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 知识文档分块服务
+ */
 @Service
 public class KnowledgeDocumentChunkService {
     private final ChunkingStrategyFactory chunkingStrategyFactory;

@@ -9,6 +9,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+/**
+ * 流式Async执行器
+ */
 public final class StreamAsyncExecutor {
 
     private static final String STREAM_BUSY_MESSAGE = "流式线程池繁忙";

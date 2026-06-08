@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
 
+/**
+ * 提示词Template工具类
+ */
 public final class PromptTemplateUtils {
     private static final Pattern MULTI_BLANK_LINES = Pattern.compile("(\\n){3,}");
 

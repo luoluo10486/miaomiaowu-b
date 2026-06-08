@@ -4,6 +4,9 @@ import com.personalblog.ragbackend.ingestion.domain.context.DocumentSource;
 import com.personalblog.ragbackend.ingestion.domain.enums.SourceType;
 import org.springframework.stereotype.Component;
 
+/**
+ * Feishu获取器
+ */
 @Component
 public class FeishuFetcher implements DocumentFetcher {
 

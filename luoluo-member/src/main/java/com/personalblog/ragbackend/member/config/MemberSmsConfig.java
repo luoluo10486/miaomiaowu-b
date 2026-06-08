@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 会员短信发送配置。
+ * 会员短信配置
  */
 @Configuration
 public class MemberSmsConfig {

@@ -13,6 +13,9 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * 本地文件获取器
+ */
 @Component
 @RequiredArgsConstructor
 public class LocalFileFetcher implements DocumentFetcher {

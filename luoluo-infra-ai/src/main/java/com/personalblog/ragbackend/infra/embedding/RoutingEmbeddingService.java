@@ -17,6 +17,9 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 路由向量化服务
+ */
 @Service
 @Primary
 public class RoutingEmbeddingService implements EmbeddingService {

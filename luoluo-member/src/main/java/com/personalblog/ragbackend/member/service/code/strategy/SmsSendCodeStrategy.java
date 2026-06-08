@@ -18,7 +18,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 /**
- * 短信验证码发送策略。
+ * 短信Send验证码策略
  */
 @Service
 public class SmsSendCodeStrategy implements MemberSendCodeStrategy {

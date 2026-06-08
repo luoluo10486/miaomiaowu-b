@@ -24,6 +24,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * 会员认证控制器Test类
+ */
 @ExtendWith(MockitoExtension.class)
 class MemberAuthControllerTest {
     @Mock

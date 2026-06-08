@@ -10,6 +10,9 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * 节点Output提取器类
+ */
 @Component
 public class NodeOutputExtractor {
 

@@ -5,6 +5,9 @@ import cn.hutool.core.util.StrUtil;
 
 import java.util.List;
 
+/**
+ * 节点ScoreFilters类
+ */
 public final class NodeScoreFilters {
     private NodeScoreFilters() {
     }

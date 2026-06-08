@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * Thin wrapper around {@link SseEmitter} that swallows client-disconnect noise.
+ * SSEEmitter发送器类
  */
 public class SseEmitterSender {
     private static final Logger log = LoggerFactory.getLogger(SseEmitterSender.class);

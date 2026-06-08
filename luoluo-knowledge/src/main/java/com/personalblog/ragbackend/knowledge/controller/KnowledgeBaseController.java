@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Arrays;
 
 /**
- * Knowledge base controller.
+ * 知识Base控制器
  */
 @RestController
 @Slf4j

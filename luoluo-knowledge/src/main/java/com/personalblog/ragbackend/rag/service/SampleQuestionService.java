@@ -8,6 +8,9 @@ import com.personalblog.ragbackend.rag.controller.vo.SampleQuestionVO;
 
 import java.util.List;
 
+/**
+ * 样例问题服务接口
+ */
 public interface SampleQuestionService {
     String create(SampleQuestionCreateRequest requestParam);
 

@@ -11,6 +11,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * AI模型配置属性
+ */
 @Validated
 @ConfigurationProperties(prefix = "ai")
 public class AIModelProperties {

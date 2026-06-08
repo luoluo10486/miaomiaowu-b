@@ -42,6 +42,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
 
+/**
+ * FairDistributed速率Limiter类
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor

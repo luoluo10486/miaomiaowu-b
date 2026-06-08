@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.common.auth.dto;
 
 /**
- * 验证码发放命令，描述缓存和记录所需的业务上下文。
+ * 校验验证码IssueCommand记录类
  */
 public record VerifyCodeIssueCommand(
         String namespace,

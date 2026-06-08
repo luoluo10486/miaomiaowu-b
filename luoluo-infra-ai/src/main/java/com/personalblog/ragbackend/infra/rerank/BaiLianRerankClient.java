@@ -26,6 +26,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * BaiLian重排序客户端
+ */
 @Service
 public class BaiLianRerankClient implements RerankClient {
 

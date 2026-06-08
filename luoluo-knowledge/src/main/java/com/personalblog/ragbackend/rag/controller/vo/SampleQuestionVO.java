@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+/**
+ * 样例问题视图对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Date;
 
 /**
- * Knowledge base view object.
+ * 知识Base视图对象
  */
 @Data
 public class KnowledgeBaseVO {

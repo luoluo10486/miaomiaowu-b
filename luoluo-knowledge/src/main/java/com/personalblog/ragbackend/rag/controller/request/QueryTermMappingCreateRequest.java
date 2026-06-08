@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 查询Term映射创建请求对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

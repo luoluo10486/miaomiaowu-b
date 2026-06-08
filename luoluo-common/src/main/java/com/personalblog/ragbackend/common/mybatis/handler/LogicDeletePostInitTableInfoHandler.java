@@ -7,7 +7,7 @@ import org.apache.ibatis.session.Configuration;
 import java.lang.reflect.Field;
 
 /**
- * 逻辑删除后置处理器，用于按配置开关控制 MP 的逻辑删除能力。
+ * Logic删除PostInitTableInfo处理器
  */
 public class LogicDeletePostInitTableInfoHandler implements PostInitTableInfoHandler {
     private static final String WITH_LOGIC_DELETE_FIELD = "withLogicDelete";

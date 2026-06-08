@@ -20,6 +20,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
+/**
+ * 多Channel检索引擎
+ */
 @Slf4j
 @Service
 public class MultiChannelRetrievalEngine {

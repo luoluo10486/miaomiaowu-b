@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.common.context;
 
 /**
- * 当前登录用户快照。
+ * 登录用户类
  */
 public class LoginUser {
     private String userId;

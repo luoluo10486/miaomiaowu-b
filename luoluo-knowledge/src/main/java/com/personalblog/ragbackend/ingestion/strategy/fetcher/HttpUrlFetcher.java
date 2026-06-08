@@ -11,6 +11,9 @@ import org.springframework.util.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * HTTPURL获取器
+ */
 @Component
 @RequiredArgsConstructor
 public class HttpUrlFetcher implements DocumentFetcher {

@@ -11,6 +11,9 @@ import com.personalblog.ragbackend.knowledge.dto.stream.MetaPayload;
 import com.personalblog.ragbackend.knowledge.enums.SseEventType;
 import com.personalblog.ragbackend.rag.util.MarkdownContentSanitizer;
 
+/**
+ * 流式对话Event处理器
+ */
 public class StreamChatEventHandler implements StreamCallback {
     private static final String TYPE_THINK = "think";
     private static final String TYPE_RESPONSE = "response";

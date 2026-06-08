@@ -10,6 +10,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 知识文档数据对象
+ */
 @TableName(value = "t_knowledge_document", autoResultMap = true)
 @Data
 public class KnowledgeDocumentDO {

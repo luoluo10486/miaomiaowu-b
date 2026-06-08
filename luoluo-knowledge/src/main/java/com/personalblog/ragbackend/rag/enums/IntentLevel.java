@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.rag.enums;
 
+/**
+ * 意图Level枚举
+ */
 public enum IntentLevel {
     DOMAIN(0),
     CATEGORY(1),

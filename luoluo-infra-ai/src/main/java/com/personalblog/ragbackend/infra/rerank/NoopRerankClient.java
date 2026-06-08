@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 空实现重排序客户端
+ */
 @Service
 public class NoopRerankClient implements RerankClient {
 

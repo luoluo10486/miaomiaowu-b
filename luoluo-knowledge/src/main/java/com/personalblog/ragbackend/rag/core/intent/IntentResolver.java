@@ -14,6 +14,9 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+/**
+ * 意图解析器
+ */
 @Service
 public class IntentResolver {
     private static final int MAX_INTENT_COUNT = 8;

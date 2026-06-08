@@ -14,7 +14,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 /**
- * 邮箱登录策略，处理邮箱和邮件验证码的认证流程。
+ * 邮箱登录策略
  */
 @Service
 public class EmailLoginStrategy implements MemberLoginStrategy {

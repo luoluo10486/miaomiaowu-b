@@ -17,7 +17,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Map Sa-Token login state to the shared user context.
+ * 会员用户上下文配置
  */
 @Configuration
 public class MemberUserContextConfig implements WebMvcConfigurer {

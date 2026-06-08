@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+/**
+ * 多问题改写服务
+ */
 @Service
 public class MultiQuestionRewriteService implements QueryRewriteService {
     private final LLMService llmService;

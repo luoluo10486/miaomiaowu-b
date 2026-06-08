@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.infra.exception;
 
 import com.personalblog.ragbackend.infra.errorcode.IErrorCode;
 
+/**
+ * 抽象异常类
+ */
 public abstract class AbstractException extends RuntimeException {
 
     protected final IErrorCode errorCode;

@@ -18,6 +18,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 路由LLM服务
+ */
 @Service
 @Primary
 public class RoutingLLMService implements LLMService {

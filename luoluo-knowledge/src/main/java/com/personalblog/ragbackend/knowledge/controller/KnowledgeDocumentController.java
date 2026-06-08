@@ -34,7 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * Knowledge document controller.
+ * 知识文档控制器
  */
 @RestController
 @Validated

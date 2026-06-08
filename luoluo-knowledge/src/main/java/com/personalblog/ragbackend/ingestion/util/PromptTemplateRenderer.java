@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.ingestion.util;
 
 import java.util.Map;
 
+/**
+ * 提示词TemplateRenderer类
+ */
 public final class PromptTemplateRenderer {
 
     private PromptTemplateRenderer() {

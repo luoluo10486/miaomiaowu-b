@@ -32,6 +32,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Dashboard服务实现
+ */
 @Service
 public class DashboardServiceImpl implements DashboardService {
     private static final String STATUS_SUCCESS = "SUCCESS";

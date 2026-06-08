@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.infra.util;
 
 import java.util.regex.Pattern;
 
+/**
+ * LLM响应对象Cleaner类
+ */
 public final class LLMResponseCleaner {
 
     private static final Pattern LEADING_CODE_FENCE = Pattern.compile("^```[\\w-]*\\s*\\n?");

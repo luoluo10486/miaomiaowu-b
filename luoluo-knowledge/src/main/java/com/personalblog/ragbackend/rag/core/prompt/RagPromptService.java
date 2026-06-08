@@ -20,6 +20,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * RAG提示词服务
+ */
 @Service
 @Slf4j
 public class RAGPromptService {

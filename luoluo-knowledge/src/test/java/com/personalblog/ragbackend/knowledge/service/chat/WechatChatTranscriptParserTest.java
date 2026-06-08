@@ -7,6 +7,9 @@ import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Wechat对话Transcript解析器Test类
+ */
 class WechatChatTranscriptParserTest {
 
     private final WechatChatTranscriptParser parser = new WechatChatTranscriptParser();

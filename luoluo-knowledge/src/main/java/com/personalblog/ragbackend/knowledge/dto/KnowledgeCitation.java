@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.knowledge.dto;
 
 import java.util.List;
 
+/**
+ * 知识Citation记录类
+ */
 public record KnowledgeCitation(
         String documentId,
         String title,

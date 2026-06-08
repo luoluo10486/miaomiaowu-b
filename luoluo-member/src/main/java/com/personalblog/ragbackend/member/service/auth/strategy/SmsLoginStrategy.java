@@ -12,7 +12,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 /**
- * 短信登录策略，处理手机号和短信验证码的认证流程。
+ * 短信登录策略
  */
 @Service
 public class SmsLoginStrategy implements MemberLoginStrategy {

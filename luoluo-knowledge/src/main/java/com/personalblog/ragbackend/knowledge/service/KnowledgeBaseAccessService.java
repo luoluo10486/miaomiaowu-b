@@ -20,6 +20,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 知识BaseAccess服务
+ */
 @Service
 public class KnowledgeBaseAccessService {
     private final KnowledgeBaseMapper knowledgeBaseMapper;

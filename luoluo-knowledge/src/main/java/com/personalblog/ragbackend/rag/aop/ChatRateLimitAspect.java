@@ -22,6 +22,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 
+/**
+ * 对话速率限流切面
+ */
 @Slf4j
 @Aspect
 @Component

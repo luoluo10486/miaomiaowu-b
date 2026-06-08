@@ -5,6 +5,9 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * MCPTool注册表
+ */
 public interface McpToolRegistry {
     void register(McpToolExecutor executor);
 

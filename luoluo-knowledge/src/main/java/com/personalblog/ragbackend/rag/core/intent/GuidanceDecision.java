@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.rag.core.intent;
 
+/**
+ * 引导Decision记录类
+ */
 public record GuidanceDecision(
         boolean prompt,
         String promptText

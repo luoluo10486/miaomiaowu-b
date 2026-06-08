@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.rag.core.retrieve.channel;
 
+/**
+ * 搜索通道
+ */
 public interface SearchChannel {
     String getName();
 

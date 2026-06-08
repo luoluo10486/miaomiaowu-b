@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * 抽象OpenAI风格对话客户端
+ */
 public abstract class AbstractOpenAIStyleChatClient implements ChatClient {
 
     protected final HttpClient httpClient;

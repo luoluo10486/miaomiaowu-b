@@ -47,6 +47,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Ingestion任务服务实现
+ */
 @Service
 @Transactional(rollbackFor = Exception.class)
 public class IngestionTaskServiceImpl implements IngestionTaskService {

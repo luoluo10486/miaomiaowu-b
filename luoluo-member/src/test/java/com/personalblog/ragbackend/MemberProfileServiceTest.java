@@ -14,6 +14,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+/**
+ * 会员资料服务Test类
+ */
 @ExtendWith(MockitoExtension.class)
 class MemberProfileServiceTest {
     @Mock

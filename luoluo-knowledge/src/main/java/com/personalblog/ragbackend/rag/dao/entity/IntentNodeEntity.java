@@ -8,6 +8,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
+/**
+ * 意图节点实体
+ */
 @TableName("t_intent_node")
 public class IntentNodeEntity {
     @TableId(value = "id", type = IdType.ASSIGN_ID)

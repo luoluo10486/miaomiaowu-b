@@ -5,6 +5,9 @@ import com.personalblog.ragbackend.rag.dao.entity.RagTraceRunEntity;
 
 import java.time.LocalDateTime;
 
+/**
+ * RAG追踪Record服务接口
+ */
 public interface RagTraceRecordService {
 
     void startRun(RagTraceRunEntity run);

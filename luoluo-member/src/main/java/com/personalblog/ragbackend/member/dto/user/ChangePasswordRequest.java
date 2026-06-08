@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.member.dto.user;
 
+/**
+ * 修改密码请求对象
+ */
 public class ChangePasswordRequest {
     private String currentPassword;
     private String newPassword;

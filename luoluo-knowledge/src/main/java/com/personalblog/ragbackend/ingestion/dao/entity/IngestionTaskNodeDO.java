@@ -9,6 +9,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * Ingestion任务节点数据对象
+ */
 @TableName("t_ingestion_task_node")
 @Data
 public class IngestionTaskNodeDO {

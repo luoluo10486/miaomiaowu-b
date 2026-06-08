@@ -4,6 +4,9 @@ import com.personalblog.ragbackend.infra.convention.ChatMessage;
 
 import java.util.List;
 
+/**
+ * 查询改写服务接口
+ */
 public interface QueryRewriteService {
     String rewrite(String userQuestion);
 

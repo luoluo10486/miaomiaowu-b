@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.member.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * 会员注册请求对象
+ */
 public class MemberRegisterRequest {
     @NotBlank(message = "授权类型不能为空")
     private String grantType;

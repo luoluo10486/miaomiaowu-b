@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 提示词Template加载器
+ */
 public class PromptTemplateLoader {
     public String load(String classpathLocation) {
         try {

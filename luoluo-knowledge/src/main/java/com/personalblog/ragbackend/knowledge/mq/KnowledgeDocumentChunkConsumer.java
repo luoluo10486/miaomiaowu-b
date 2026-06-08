@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+/**
+ * 知识文档分块消费者
+ */
 @Component
 @RocketMQMessageListener(
         topic = "knowledge-document-chunk_topic${unique-name:}",

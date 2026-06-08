@@ -9,6 +9,9 @@ import com.personalblog.ragbackend.knowledge.dao.handler.JsonbTypeHandler;
 
 import java.time.LocalDateTime;
 
+/**
+ * RAG追踪Run实体
+ */
 @TableName(value = "t_rag_trace_run", autoResultMap = true)
 public class RagTraceRunEntity {
     @TableId(value = "id", type = IdType.AUTO)

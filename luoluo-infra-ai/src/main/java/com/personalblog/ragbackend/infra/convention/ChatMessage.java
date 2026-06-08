@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.infra.convention;
 
+/**
+ * 对话消息
+ */
 public class ChatMessage {
 
     private Role role;

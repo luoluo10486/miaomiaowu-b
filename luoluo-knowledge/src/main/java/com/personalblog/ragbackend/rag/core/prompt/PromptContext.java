@@ -9,6 +9,9 @@ import lombok.Data;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 提示词上下文
+ */
 @Data
 @Builder
 public class PromptContext {

@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 索引器Settings类
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -9,6 +9,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 知识Base数据对象
+ */
 @TableName("t_knowledge_base")
 @Data
 public class KnowledgeBaseDO {

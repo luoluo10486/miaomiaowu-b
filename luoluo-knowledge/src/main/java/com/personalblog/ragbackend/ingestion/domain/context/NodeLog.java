@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
+/**
+ * 节点日志类
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

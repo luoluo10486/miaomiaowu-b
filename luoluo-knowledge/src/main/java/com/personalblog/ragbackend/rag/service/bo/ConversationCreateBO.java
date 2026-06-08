@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+/**
+ * 会话创建业务对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

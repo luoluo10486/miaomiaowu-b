@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 搜索Channel结果类
+ */
 @Data
 @Builder
 public class SearchChannelResult {

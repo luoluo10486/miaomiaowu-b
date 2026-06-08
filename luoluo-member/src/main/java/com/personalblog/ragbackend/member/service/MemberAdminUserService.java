@@ -16,6 +16,9 @@ import com.personalblog.ragbackend.member.mapper.MemberUserMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * 会员管理端用户服务
+ */
 @Service
 public class MemberAdminUserService {
     private static final String DEFAULT_ADMIN_USERNAME = "admin";

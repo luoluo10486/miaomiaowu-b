@@ -19,7 +19,7 @@ import java.util.UUID;
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 
 /**
- * 基于阿里云短信服务的会员短信发送器。
+ * Aliyun会员短信发送器类
  */
 public class AliyunMemberSmsSender implements MemberSmsSender {
     private static final String PRODUCT = "Dysmsapi";

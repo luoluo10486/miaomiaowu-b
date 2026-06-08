@@ -10,6 +10,9 @@ import com.personalblog.ragbackend.member.service.MemberRegisterService;
 import com.personalblog.ragbackend.member.service.code.MemberSendCodeService;
 import org.springframework.stereotype.Service;
 
+/**
+ * 会员认证应用服务
+ */
 @Service
 public class MemberAuthApplicationService {
     private final MemberAuthService memberAuthService;

@@ -8,6 +8,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * RAG问题QuotaAudit实体
+ */
 @Data
 @TableName("t_rag_question_quota_audit")
 public class RagQuestionQuotaAuditEntity {

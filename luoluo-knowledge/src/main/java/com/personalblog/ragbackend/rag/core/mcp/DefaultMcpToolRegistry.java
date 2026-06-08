@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * 默认MCPTool注册表
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor

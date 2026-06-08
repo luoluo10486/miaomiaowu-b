@@ -7,7 +7,7 @@ import com.personalblog.ragbackend.member.config.MemberProperties;
 import org.springframework.stereotype.Service;
 
 /**
- * 会员会话服务。
+ * 会员会话服务
  */
 @Service
 public class MemberSessionService {

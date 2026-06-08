@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 流程Definition类
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

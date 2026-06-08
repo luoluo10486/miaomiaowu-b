@@ -4,6 +4,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 文档分块响应对象
+ */
 public record DocumentChunkResponse(
         boolean success,
         String mimeType,

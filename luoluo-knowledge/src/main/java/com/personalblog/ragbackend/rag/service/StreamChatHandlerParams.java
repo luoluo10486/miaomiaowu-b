@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.rag.service;
 import com.personalblog.ragbackend.common.context.LoginUser;
 import com.personalblog.ragbackend.common.web.sse.SseEmitterSender;
 
+/**
+ * 流式对话处理器Params记录类
+ */
 public record StreamChatHandlerParams(
         SseEmitterSender sender,
         String taskId,

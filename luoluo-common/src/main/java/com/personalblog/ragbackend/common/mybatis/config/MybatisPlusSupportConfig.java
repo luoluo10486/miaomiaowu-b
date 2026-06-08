@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
- * MyBatis-Plus 支持配置，统一注册分页和逻辑删除扩展。
+ * MybatisPlusSupport配置
  */
 @Configuration
 @EnableTransactionManagement(proxyTargetClass = true)

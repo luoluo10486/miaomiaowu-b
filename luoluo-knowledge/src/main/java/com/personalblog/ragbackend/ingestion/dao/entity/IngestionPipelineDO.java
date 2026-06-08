@@ -9,6 +9,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * Ingestion流程数据对象
+ */
 @TableName("t_ingestion_pipeline")
 @Data
 public class IngestionPipelineDO {

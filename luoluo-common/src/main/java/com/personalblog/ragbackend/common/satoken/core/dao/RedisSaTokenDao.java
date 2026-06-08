@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis 版 Sa-Token DAO，用于统一管理令牌和会话对象的存取。
+ * RedisSa令牌Dao类
  */
 public class RedisSaTokenDao implements SaTokenDaoBySessionFollowObject {
     private final StringRedisTemplate redisTemplate;

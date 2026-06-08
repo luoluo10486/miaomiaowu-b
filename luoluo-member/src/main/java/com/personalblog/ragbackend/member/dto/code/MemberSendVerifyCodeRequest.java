@@ -3,7 +3,7 @@ package com.personalblog.ragbackend.member.dto.code;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * 验证码发送请求，统一承载短信和邮箱验证码发送参数。
+ * 会员Send校验验证码请求对象
  */
 public class MemberSendVerifyCodeRequest {
     @NotBlank(message = "grantType 不能为空")

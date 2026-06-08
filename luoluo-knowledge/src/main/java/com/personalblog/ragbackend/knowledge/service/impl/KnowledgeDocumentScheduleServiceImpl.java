@@ -17,6 +17,9 @@ import org.springframework.util.StringUtils;
 
 import java.util.Date;
 
+/**
+ * 知识文档调度服务实现
+ */
 @Service
 public class KnowledgeDocumentScheduleServiceImpl implements KnowledgeDocumentScheduleService {
     private final KnowledgeDocumentScheduleMapper scheduleMapper;

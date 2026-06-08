@@ -18,8 +18,7 @@ import java.util.UUID;
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 
 /**
- * 通用邮件发送服务。
- * 当未配置真实邮件客户端时，会自动退化为 mock 回执，方便本地联调。
+ * 通用邮件发送器类
  */
 @Service
 public class CommonMailSender {

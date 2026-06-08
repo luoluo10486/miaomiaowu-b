@@ -16,6 +16,9 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * 远程文件获取器
+ */
 @Component
 public class RemoteFileFetcher {
     private final HttpClient httpClient = HttpClient.newHttpClient();

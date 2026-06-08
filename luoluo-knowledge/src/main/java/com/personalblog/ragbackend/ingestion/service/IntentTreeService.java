@@ -8,6 +8,9 @@ import com.personalblog.ragbackend.rag.controller.vo.IntentNodeTreeVO;
 
 import java.util.List;
 
+/**
+ * 意图树服务接口
+ */
 public interface IntentTreeService extends IService<IntentNodeEntity> {
     List<IntentNodeTreeVO> getFullTree();
 

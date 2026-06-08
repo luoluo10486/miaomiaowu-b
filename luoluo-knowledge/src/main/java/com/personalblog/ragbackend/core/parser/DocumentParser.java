@@ -4,6 +4,9 @@ import com.personalblog.ragbackend.knowledge.dto.document.ParseResult;
 
 import java.io.InputStream;
 
+/**
+ * 文档解析器
+ */
 public interface DocumentParser {
 
     String getParserType();

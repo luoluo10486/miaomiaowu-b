@@ -8,6 +8,9 @@ import com.personalblog.ragbackend.common.web.domain.Results;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Sa令牌异常处理器
+ */
 @RestControllerAdvice
 public class SaTokenExceptionHandler {
 

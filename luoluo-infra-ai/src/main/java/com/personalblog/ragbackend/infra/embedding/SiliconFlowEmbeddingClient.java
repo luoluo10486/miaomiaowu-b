@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.net.http.HttpClient;
 
+/**
+ * SiliconFlow向量化客户端
+ */
 @Service
 public class SiliconFlowEmbeddingClient extends AbstractOpenAIStyleEmbeddingClient {
 

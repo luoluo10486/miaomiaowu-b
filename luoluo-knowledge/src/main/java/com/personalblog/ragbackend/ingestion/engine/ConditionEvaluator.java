@@ -13,6 +13,9 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 条件Evaluator类
+ */
 @Component
 public class ConditionEvaluator {
 

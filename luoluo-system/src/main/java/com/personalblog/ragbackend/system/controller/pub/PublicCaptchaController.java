@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 对外公开的图形验证码控制器。
+ * 公开验证码控制器
  */
 @SaIgnore
 @RestController

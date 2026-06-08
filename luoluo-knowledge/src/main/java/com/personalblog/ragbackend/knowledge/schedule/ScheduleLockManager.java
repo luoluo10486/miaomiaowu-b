@@ -12,6 +12,9 @@ import java.net.InetAddress;
 import java.util.Date;
 import java.util.UUID;
 
+/**
+ * 调度锁管理器
+ */
 @Component
 public class ScheduleLockManager {
     private final KnowledgeDocumentScheduleMapper scheduleMapper;

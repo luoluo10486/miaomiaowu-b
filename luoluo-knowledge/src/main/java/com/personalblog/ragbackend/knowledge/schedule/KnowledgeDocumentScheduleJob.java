@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * 知识文档调度定时任务
+ */
 @Component
 @RequiredArgsConstructor
 public class KnowledgeDocumentScheduleJob {

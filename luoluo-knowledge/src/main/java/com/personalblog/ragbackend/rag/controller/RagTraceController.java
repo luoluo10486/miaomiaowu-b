@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * RAG追踪控制器
+ */
 @RestController
 @RequiredArgsConstructor
 public class RagTraceController {

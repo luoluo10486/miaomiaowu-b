@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.knowledge.controller.request;
 
 import lombok.Data;
 
+/**
+ * 对话导入请求对象
+ */
 @Data
 public class ChatImportRequest {
     private Boolean autoStart;

@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.knowledge.dto;
 
 import java.util.List;
 
+/**
+ * 知识追踪
+ */
 public record KnowledgeTrace(
         String traceId,
         String conversationId,

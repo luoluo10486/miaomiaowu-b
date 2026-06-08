@@ -7,6 +7,9 @@ import com.personalblog.ragbackend.rag.dao.entity.RagConversationSummaryEntity;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 会话Group服务接口
+ */
 public interface ConversationGroupService {
     List<RagConversationMessageEntity> listLatestUserOnlyMessages(String conversationId, String userId, int limit);
 

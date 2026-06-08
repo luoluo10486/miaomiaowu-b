@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.infra.http;
 
+/**
+ * 模型客户端异常
+ */
 public class ModelClientException extends RuntimeException {
 
     private final ModelClientErrorType errorType;

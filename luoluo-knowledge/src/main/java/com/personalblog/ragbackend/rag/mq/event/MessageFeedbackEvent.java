@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.rag.mq.event;
 import java.io.Serial;
 import java.io.Serializable;
 
+/**
+ * 消息Feedback事件
+ */
 public class MessageFeedbackEvent implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

@@ -15,6 +15,9 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 会话Group服务实现
+ */
 @Service
 public class ConversationGroupServiceImpl implements ConversationGroupService {
     private final RagConversationMessageMapper messageMapper;

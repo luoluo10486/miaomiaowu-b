@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.knowledge.dto.document;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * 解析结果记录类
+ */
 public record ParseResult(
         boolean success,
         String mimeType,

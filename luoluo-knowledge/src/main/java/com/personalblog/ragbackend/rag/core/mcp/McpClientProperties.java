@@ -6,6 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * MCP客户端配置属性
+ */
 @Data
 @ConfigurationProperties(prefix = "rag.mcp")
 public class McpClientProperties {

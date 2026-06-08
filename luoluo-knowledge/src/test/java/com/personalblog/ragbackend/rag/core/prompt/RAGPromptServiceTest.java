@@ -15,6 +15,9 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+/**
+ * RAG提示词服务Test类
+ */
 @ExtendWith(MockitoExtension.class)
 class RAGPromptServiceTest {
 

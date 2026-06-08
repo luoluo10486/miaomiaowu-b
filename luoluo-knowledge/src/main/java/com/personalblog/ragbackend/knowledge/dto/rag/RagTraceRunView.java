@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.knowledge.dto.rag;
 
 import java.time.LocalDateTime;
 
+/**
+ * RAG追踪RunView记录类
+ */
 public record RagTraceRunView(
         Long id,
         String traceId,

@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 消息Feedback控制器
+ */
 @RestController
 @RequiredArgsConstructor
 public class MessageFeedbackController {

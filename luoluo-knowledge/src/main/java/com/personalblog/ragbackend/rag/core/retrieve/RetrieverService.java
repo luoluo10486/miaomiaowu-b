@@ -4,6 +4,9 @@ import com.personalblog.ragbackend.infra.convention.RetrievedChunk;
 
 import java.util.List;
 
+/**
+ * 检索器服务接口
+ */
 public interface RetrieverService {
     default List<RetrievedChunk> retrieve(String query, int topK) {
         return retrieve(RetrieveRequest.builder().query(query).topK(topK).build());

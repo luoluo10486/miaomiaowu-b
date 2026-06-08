@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.knowledge.enums;
 
 /**
- * SSE 事件类型。
+ * SSEEventType枚举
  */
 public enum SseEventType {
     META("meta"),

@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.ingestion.util;
 
 import org.apache.tika.Tika;
 
+/**
+ * MIMETypeDetector类
+ */
 public final class MimeTypeDetector {
 
     private static final Tika TIKA = new Tika();

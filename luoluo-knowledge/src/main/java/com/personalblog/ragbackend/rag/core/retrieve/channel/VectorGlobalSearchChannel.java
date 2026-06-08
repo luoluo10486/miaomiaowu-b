@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
+/**
+ * 向量全局搜索通道
+ */
 @Slf4j
 @Component
 public class VectorGlobalSearchChannel implements SearchChannel {

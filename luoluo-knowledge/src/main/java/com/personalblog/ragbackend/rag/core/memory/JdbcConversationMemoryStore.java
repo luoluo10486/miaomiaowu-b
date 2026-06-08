@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * JDBC会话记忆存储
+ */
 @Service
 public class JdbcConversationMemoryStore implements ConversationMemoryStore {
     private final RagConversationMapper conversationMapper;

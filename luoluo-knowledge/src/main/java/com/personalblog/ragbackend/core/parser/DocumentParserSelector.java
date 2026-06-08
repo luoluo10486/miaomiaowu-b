@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 文档解析器选择器
+ */
 @Component
 public class DocumentParserSelector {
     private final List<DocumentParser> parsers;

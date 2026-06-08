@@ -6,6 +6,9 @@ import com.personalblog.ragbackend.rag.controller.request.QueryTermMappingPageRe
 import com.personalblog.ragbackend.rag.controller.request.QueryTermMappingUpdateRequest;
 import com.personalblog.ragbackend.rag.controller.vo.QueryTermMappingVO;
 
+/**
+ * 查询Term映射管理端服务接口
+ */
 public interface QueryTermMappingAdminService {
     String create(QueryTermMappingCreateRequest requestParam);
 

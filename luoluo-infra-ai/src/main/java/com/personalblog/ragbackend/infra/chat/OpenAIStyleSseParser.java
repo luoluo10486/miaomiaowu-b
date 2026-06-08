@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.infra.chat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * OpenAI风格SSE解析器
+ */
 public final class OpenAIStyleSseParser {
 
     private static final String DATA_PREFIX = "data:";

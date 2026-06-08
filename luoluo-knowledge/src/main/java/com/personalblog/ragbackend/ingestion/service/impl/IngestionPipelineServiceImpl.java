@@ -31,6 +31,9 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Ingestion流程服务实现
+ */
 @Service
 @Transactional(rollbackFor = Exception.class)
 public class IngestionPipelineServiceImpl implements IngestionPipelineService {

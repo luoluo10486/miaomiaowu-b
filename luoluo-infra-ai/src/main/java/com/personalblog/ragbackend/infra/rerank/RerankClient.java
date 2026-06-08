@@ -5,6 +5,9 @@ import com.personalblog.ragbackend.infra.model.ModelTarget;
 
 import java.util.List;
 
+/**
+ * 重排序客户端接口
+ */
 public interface RerankClient {
 
     String provider();

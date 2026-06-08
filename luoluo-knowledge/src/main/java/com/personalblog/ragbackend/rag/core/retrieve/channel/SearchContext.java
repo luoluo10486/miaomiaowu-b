@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 搜索上下文
+ */
 @Data
 @Builder
 public class SearchContext {

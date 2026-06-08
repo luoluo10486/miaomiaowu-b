@@ -10,6 +10,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * 对话Transcript分块服务Test类
+ */
 class ChatTranscriptChunkServiceTest {
 
     private final ChatTranscriptChunkService service = new ChatTranscriptChunkService();

@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 意图节点更新请求对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

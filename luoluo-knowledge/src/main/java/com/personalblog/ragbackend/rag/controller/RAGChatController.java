@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * 对齐 RAgent 入口形状的流式聊天控制器。
+ * RAG对话控制器
  */
 @RestController
 @RequiredArgsConstructor

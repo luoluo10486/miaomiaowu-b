@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.core.chunk;
 
+/**
+ * TextChunkingOptions记录类
+ */
 public record TextChunkingOptions(
         int targetChunkSize,
         int maxChunkSize,

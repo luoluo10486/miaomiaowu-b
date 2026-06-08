@@ -22,6 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Chunker节点
+ */
 @Component
 public class ChunkerNode implements IngestionNode {
 

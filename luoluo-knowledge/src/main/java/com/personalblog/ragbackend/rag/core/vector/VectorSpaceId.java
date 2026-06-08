@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 向量SpaceID类
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -6,6 +6,9 @@ import com.personalblog.ragbackend.rag.core.rewrite.RewriteResult;
 
 import java.util.List;
 
+/**
+ * RAG查询Plan记录类
+ */
 public record RagQueryPlan(
         String originalQuestion,
         RewriteResult rewriteResult,

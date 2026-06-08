@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+/**
+ * RAG追踪Run视图对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

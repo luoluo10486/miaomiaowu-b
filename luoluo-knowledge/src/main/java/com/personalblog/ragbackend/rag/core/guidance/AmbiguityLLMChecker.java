@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * AmbiguityLLM检查器
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor

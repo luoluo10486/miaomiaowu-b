@@ -4,6 +4,9 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+/**
+ * Daily问题限流更新请求对象
+ */
 @Data
 public class DailyQuestionLimitUpdateRequest {
     @NotNull(message = "每日提问上限不能为空")

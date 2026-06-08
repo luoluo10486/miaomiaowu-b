@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 会话控制器
+ */
 @RestController
 @RequiredArgsConstructor
 @MemberLoginRequired

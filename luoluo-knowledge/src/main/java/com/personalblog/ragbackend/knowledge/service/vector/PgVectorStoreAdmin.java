@@ -4,6 +4,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * PG向量存储管理端类
+ */
 @Component
 @ConditionalOnProperty(name = "rag.vector.type", havingValue = "pg")
 public class PgVectorStoreAdmin implements VectorStoreAdmin {

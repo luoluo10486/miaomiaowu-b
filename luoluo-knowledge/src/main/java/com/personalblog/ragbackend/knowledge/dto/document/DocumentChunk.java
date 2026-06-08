@@ -4,6 +4,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * 文档分块记录类
+ */
 public record DocumentChunk(
         int chunkIndex,
         String sectionTitle,

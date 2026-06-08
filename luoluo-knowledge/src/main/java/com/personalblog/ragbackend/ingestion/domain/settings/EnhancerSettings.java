@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 增强器Settings类
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

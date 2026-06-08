@@ -10,6 +10,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 知识分块数据对象
+ */
 @TableName(value = "t_knowledge_chunk", autoResultMap = true)
 @Data
 public class KnowledgeChunkDO {

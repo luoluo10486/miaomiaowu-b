@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.knowledge.service.vector;
 
 import org.springframework.stereotype.Component;
 
+/**
+ * 知识CollectionName解析器
+ */
 @Component
 public class KnowledgeCollectionNameResolver {
     private final KnowledgeVectorSpaceResolver vectorSpaceResolver;

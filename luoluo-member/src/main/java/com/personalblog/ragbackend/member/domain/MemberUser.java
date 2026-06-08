@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 /**
- * 系统用户实体，对应会员登录体系中的用户主表。
+ * 会员用户类
  */
 @TableName("t_user")
 public class MemberUser {

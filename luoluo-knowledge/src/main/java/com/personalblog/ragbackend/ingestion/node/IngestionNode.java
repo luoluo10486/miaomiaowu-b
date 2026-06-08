@@ -4,6 +4,9 @@ import com.personalblog.ragbackend.ingestion.domain.context.IngestionContext;
 import com.personalblog.ragbackend.ingestion.domain.pipeline.NodeConfig;
 import com.personalblog.ragbackend.ingestion.domain.result.NodeResult;
 
+/**
+ * Ingestion节点
+ */
 public interface IngestionNode {
 
     String getNodeType();

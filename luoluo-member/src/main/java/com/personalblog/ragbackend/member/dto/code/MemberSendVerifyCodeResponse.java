@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.member.dto.code;
 
 /**
- * 验证码发送响应，返回发送流水和调试信息。
+ * 会员Send校验验证码响应对象
  */
 public record MemberSendVerifyCodeResponse(
         String requestId,

@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.knowledge.mq.event;
 
+/**
+ * 知识文档分块事件
+ */
 public class KnowledgeDocumentChunkEvent {
     private Long documentId;
     private String operator;

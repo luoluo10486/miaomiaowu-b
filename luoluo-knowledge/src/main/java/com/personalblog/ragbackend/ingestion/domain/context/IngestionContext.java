@@ -11,6 +11,9 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Ingestion上下文
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

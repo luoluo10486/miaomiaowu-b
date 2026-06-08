@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * 意图引导服务
+ */
 @Service
 public class IntentGuidanceService {
     private final GuidanceProperties guidanceProperties;

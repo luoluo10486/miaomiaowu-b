@@ -13,6 +13,9 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
+/**
+ * 会员管理端BootstrapRunner类
+ */
 @Component
 @EnableConfigurationProperties(MemberAdminBootstrapProperties.class)
 public class MemberAdminBootstrapRunner implements ApplicationRunner {

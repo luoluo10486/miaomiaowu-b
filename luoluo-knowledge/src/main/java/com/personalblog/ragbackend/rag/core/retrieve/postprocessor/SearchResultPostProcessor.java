@@ -6,6 +6,9 @@ import com.personalblog.ragbackend.rag.core.retrieve.channel.SearchContext;
 
 import java.util.List;
 
+/**
+ * 搜索结果后处理器
+ */
 public interface SearchResultPostProcessor {
 
     String getName();

@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 会话消息服务实现
+ */
 @Service
 public class ConversationMessageServiceImpl implements ConversationMessageService {
     private final RagConversationMessageMapper messageMapper;

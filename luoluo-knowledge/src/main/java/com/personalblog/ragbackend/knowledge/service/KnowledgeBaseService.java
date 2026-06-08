@@ -6,6 +6,9 @@ import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeBasePag
 import com.personalblog.ragbackend.knowledge.controller.request.KnowledgeBaseUpdateRequest;
 import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeBaseVO;
 
+/**
+ * 知识Base服务接口
+ */
 public interface KnowledgeBaseService {
     String create(KnowledgeBaseCreateRequest requestParam);
     void update(KnowledgeBaseUpdateRequest requestParam);

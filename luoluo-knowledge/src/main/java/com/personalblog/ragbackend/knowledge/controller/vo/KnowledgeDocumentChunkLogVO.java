@@ -4,6 +4,9 @@ import lombok.Data;
 
 import java.util.Date;
 
+/**
+ * 知识文档分块日志视图对象
+ */
 @Data
 public class KnowledgeDocumentChunkLogVO {
     private String id;

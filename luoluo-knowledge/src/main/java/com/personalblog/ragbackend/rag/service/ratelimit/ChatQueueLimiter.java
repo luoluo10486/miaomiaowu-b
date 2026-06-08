@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.rag.service.ratelimit;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+/**
+ * 对话队列Limiter类
+ */
 @Component
 public class ChatQueueLimiter {
     private final FairDistributedRateLimiter fairDistributedRateLimiter;

@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * JSON响应对象解析器
+ */
 public final class JsonResponseParser {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();

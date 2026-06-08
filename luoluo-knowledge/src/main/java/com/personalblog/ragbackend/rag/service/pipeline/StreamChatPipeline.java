@@ -31,6 +31,9 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 流式对话流程
+ */
 @Service
 @Slf4j
 public class StreamChatPipeline {

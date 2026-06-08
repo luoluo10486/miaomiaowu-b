@@ -21,6 +21,9 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 样例问题服务实现
+ */
 @Service
 @RequiredArgsConstructor
 public class SampleQuestionServiceImpl implements SampleQuestionService {

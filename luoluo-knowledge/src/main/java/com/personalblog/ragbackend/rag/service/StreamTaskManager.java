@@ -18,6 +18,9 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
+/**
+ * 流式任务管理器
+ */
 @Component
 public class StreamTaskManager {
     private static final String CANCEL_TOPIC = "ragent:stream:cancel";

@@ -4,6 +4,9 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.UUID;
 
+/**
+ * 消息包装器
+ */
 public class MessageWrapper<T> implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

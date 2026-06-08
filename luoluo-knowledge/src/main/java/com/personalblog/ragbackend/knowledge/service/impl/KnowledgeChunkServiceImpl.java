@@ -38,6 +38,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * 知识分块服务实现
+ */
 @Service
 public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     private final KnowledgeChunkMapper knowledgeChunkMapper;

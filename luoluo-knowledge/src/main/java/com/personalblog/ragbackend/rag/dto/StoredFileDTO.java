@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Stored文件数据传输对象
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

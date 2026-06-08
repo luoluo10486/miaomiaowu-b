@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 查询Term映射控制器
+ */
 @RequiredArgsConstructor
 @RestController
 public class QueryTermMappingController {

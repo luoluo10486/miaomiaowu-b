@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
+/**
+ * 检索请求对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

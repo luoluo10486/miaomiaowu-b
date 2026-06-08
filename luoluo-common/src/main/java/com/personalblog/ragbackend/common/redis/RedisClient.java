@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis 工具类，封装项目内通用的字符串和对象读写操作。
+ * Redis客户端
  */
 @Component
 public class RedisClient {

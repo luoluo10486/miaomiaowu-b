@@ -8,7 +8,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
 /**
- * 文档上传信号量初始化器
+ * Semaphore初始化器
  */
 @Slf4j
 @Component

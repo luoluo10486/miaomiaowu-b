@@ -10,6 +10,9 @@ import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
 
+/**
+ * S3获取器
+ */
 @Component
 @RequiredArgsConstructor
 public class S3Fetcher implements DocumentFetcher {

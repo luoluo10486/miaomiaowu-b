@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.knowledge.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * 知识Ask请求对象
+ */
 public record KnowledgeAskRequest(
         @NotBlank(message = "question 涓嶈兘涓虹┖")
         String question,

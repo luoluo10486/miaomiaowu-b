@@ -16,7 +16,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 图形验证码服务，负责生成 SVG 验证码并通过 Redis 做一次性校验。
+ * Image验证码服务
  */
 @Service
 public class ImageCaptchaService {

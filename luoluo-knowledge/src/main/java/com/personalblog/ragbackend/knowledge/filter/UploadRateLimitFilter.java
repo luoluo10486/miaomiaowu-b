@@ -19,8 +19,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 文件上传限流 Filter
- * 在 multipart 解析之前拦截，防止临时文件过多
+ * 上传速率限流过滤器
  */
 @Slf4j
 @Component

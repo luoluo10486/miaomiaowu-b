@@ -3,7 +3,7 @@ package com.personalblog.ragbackend.knowledge.controller.vo;
 import lombok.Data;
 
 /**
- * Document search result view object.
+ * 知识文档搜索视图对象
  */
 @Data
 public class KnowledgeDocumentSearchVO {

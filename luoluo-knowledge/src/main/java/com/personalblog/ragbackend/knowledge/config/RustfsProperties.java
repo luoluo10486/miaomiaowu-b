@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+/**
+ * RustFS配置属性
+ */
 @Validated
 @ConfigurationProperties(prefix = "rustfs")
 public class RustfsProperties {

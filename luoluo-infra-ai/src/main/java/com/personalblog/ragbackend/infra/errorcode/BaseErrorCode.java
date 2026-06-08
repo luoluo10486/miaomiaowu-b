@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.infra.errorcode;
 
+/**
+ * BaseError验证码枚举
+ */
 public enum BaseErrorCode implements IErrorCode {
     CLIENT_ERROR("A000001", "客户端错误"),
     SERVICE_ERROR("B000001", "系统执行出错"),

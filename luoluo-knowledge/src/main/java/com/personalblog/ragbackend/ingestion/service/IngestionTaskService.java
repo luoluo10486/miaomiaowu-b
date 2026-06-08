@@ -10,6 +10,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * Ingestion任务服务接口
+ */
 public interface IngestionTaskService {
 
     IngestionResult execute(IngestionTaskCreateRequest request);

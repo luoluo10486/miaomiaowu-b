@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Qq对话Transcript记录类
+ */
 public record QqChatTranscript(
         String sourceFileName,
         String platform,

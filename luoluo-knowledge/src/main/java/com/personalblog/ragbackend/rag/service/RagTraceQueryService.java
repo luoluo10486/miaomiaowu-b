@@ -8,6 +8,9 @@ import com.personalblog.ragbackend.rag.controller.vo.RagTraceRunVO;
 
 import java.util.List;
 
+/**
+ * RAG追踪查询服务接口
+ */
 public interface RagTraceQueryService {
     IPage<RagTraceRunVO> pageRuns(RagTraceRunPageRequest request);
 

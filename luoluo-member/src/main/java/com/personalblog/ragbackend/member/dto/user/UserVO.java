@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.member.dto.user;
 
 import java.time.LocalDateTime;
 
+/**
+ * 用户视图对象
+ */
 public class UserVO {
     private String id;
     private String username;

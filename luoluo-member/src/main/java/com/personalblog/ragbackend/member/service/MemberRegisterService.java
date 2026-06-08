@@ -15,6 +15,9 @@ import java.util.Locale;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 
+/**
+ * 会员注册服务
+ */
 @Service
 public class MemberRegisterService {
     private static final String USER_TYPE = "user";

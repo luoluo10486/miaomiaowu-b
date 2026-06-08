@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Ingestion状态
+ */
 @Getter
 @RequiredArgsConstructor
 public enum IngestionStatus {

@@ -21,6 +21,9 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * 知识Base服务ImplTest类
+ */
 @ExtendWith(MockitoExtension.class)
 class KnowledgeBaseServiceImplTest {
 

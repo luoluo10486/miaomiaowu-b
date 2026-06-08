@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * System settings view object.
+ * 系统Settings视图对象
  */
 @Setter
 @Getter

@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 会话服务实现
+ */
 @Service
 @RequiredArgsConstructor
 public class ConversationServiceImpl implements ConversationService {

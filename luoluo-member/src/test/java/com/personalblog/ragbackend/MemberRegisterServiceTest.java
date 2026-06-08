@@ -24,6 +24,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * 会员注册服务Test类
+ */
 @ExtendWith(MockitoExtension.class)
 class MemberRegisterServiceTest {
     @Mock

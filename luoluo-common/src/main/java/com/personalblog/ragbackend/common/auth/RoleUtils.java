@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+/**
+ * 角色工具类
+ */
 public final class RoleUtils {
     public static final String ROLE_USER = "user";
     public static final String ROLE_SUPER_ADMIN = "superadmin";

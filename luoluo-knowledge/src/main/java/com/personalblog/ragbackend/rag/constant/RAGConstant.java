@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.rag.constant;
 
+/**
+ * RAGConstant类
+ */
 public class RAGConstant {
     public static final int DEFAULT_TOP_K = 10;
     public static final String MULTI_CHANNEL_KEY = "multi_channel";

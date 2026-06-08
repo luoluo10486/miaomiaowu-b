@@ -5,6 +5,9 @@ import com.alibaba.ttl.TransmittableThreadLocal;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+/**
+ * RAG追踪上下文
+ */
 public final class RagTraceContext {
     private static final TransmittableThreadLocal<String> TRACE_ID = new TransmittableThreadLocal<>();
     private static final TransmittableThreadLocal<String> TASK_ID = new TransmittableThreadLocal<>();

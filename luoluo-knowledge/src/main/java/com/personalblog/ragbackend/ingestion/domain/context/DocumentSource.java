@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
+/**
+ * 文档来源类
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

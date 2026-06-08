@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.function.Function;
 
+/**
+ * 模型路由执行器
+ */
 @Component
 public class ModelRoutingExecutor {
     private final ModelHealthStore modelHealthStore;

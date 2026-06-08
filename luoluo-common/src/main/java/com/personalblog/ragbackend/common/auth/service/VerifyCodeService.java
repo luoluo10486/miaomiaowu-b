@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.Locale;
 
 /**
- * 通用验证码服务，统一处理验证码缓存、留痕和核销。
+ * 校验验证码服务
  */
 @Service
 public class VerifyCodeService {

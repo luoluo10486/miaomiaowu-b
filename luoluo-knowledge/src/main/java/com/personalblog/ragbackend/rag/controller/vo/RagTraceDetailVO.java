@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * RAG追踪详情视图对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

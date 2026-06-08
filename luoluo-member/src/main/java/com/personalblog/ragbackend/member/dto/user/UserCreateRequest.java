@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.member.dto.user;
 
+/**
+ * 用户创建请求对象
+ */
 public class UserCreateRequest {
     private String username;
     private String password;

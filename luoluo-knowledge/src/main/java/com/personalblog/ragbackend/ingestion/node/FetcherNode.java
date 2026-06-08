@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 获取器节点
+ */
 @Component
 public class FetcherNode implements IngestionNode {
 

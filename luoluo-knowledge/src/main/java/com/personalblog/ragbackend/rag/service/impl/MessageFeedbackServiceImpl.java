@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 消息Feedback服务实现
+ */
 @Service
 public class MessageFeedbackServiceImpl implements MessageFeedbackService {
     private final RagMessageFeedbackMapper feedbackMapper;

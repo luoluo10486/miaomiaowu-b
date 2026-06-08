@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.infra.token;
 
 import org.springframework.stereotype.Service;
 
+/**
+ * 启发式令牌计数器服务
+ */
 @Service
 public class HeuristicTokenCounterService implements TokenCounterService {
 

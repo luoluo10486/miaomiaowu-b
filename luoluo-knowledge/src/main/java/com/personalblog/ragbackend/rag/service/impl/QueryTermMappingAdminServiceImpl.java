@@ -19,6 +19,9 @@ import org.springframework.stereotype.Service;
 import java.time.ZoneId;
 import java.util.Date;
 
+/**
+ * 查询Term映射管理端服务实现
+ */
 @Service
 @RequiredArgsConstructor
 public class QueryTermMappingAdminServiceImpl implements QueryTermMappingAdminService {

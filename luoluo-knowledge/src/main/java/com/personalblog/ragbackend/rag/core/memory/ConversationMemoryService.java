@@ -4,6 +4,9 @@ import com.personalblog.ragbackend.infra.convention.ChatMessage;
 
 import java.util.List;
 
+/**
+ * 会话记忆服务接口
+ */
 public interface ConversationMemoryService {
     List<ChatMessage> load(String conversationId, Long userId);
 

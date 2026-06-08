@@ -5,6 +5,9 @@ import com.personalblog.ragbackend.infra.convention.ChatRequest;
 
 import java.util.List;
 
+/**
+ * LLM服务接口
+ */
 public interface LLMService {
 
     default String chat(String prompt) {

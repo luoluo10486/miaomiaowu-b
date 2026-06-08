@@ -9,6 +9,9 @@ import com.personalblog.ragbackend.knowledge.dao.handler.JsonbTypeHandler;
 
 import java.time.LocalDateTime;
 
+/**
+ * RAG会话消息实体
+ */
 @TableName(value = "t_message", autoResultMap = true)
 public class RagConversationMessageEntity {
     @TableId(value = "id", type = IdType.AUTO)

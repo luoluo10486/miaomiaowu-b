@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.knowledge.dto.rag;
 
+/**
+ * RAG追踪Run分页请求对象
+ */
 public class RagTraceRunPageRequest {
     private long current = 1;
     private long size = 10;

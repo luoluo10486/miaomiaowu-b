@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 补充器节点
+ */
 @Component
 public class EnricherNode implements IngestionNode {
 

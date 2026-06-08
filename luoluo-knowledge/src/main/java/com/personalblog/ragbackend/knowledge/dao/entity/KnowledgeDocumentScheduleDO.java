@@ -8,6 +8,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 知识文档调度数据对象
+ */
 @TableName("t_knowledge_document_schedule")
 @Data
 public class KnowledgeDocumentScheduleDO {

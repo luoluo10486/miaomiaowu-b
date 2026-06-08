@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * 对话Transcript解析器注册表
+ */
 @Service
 public class ChatTranscriptParserRegistry {
     private final Map<String, ChatTranscriptParser> parsersByPlatform;

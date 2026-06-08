@@ -25,6 +25,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * SiliconFlow重排序客户端
+ */
 @Service
 public class SiliconFlowRerankClient implements RerankClient {
 

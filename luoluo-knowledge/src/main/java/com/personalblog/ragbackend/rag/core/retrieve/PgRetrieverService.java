@@ -12,6 +12,9 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * PG检索器服务
+ */
 @Service
 @ConditionalOnProperty(name = "rag.vector.type", havingValue = "pg")
 public class PgRetrieverService implements RetrieverService {

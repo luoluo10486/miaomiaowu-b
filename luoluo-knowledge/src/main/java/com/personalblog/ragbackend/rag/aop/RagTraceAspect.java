@@ -28,6 +28,9 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * RAG追踪切面
+ */
 @Aspect
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)

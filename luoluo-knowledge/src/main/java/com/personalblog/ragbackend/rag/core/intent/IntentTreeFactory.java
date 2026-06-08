@@ -10,6 +10,9 @@ import static com.personalblog.ragbackend.rag.enums.IntentLevel.CATEGORY;
 import static com.personalblog.ragbackend.rag.enums.IntentLevel.DOMAIN;
 import static com.personalblog.ragbackend.rag.enums.IntentLevel.TOPIC;
 
+/**
+ * 意图树工厂
+ */
 public class IntentTreeFactory {
     private static final String KB_ID_GROUP = "1997855927072321537";
     private static final String KB_ID_BIZ = "1997857139737882625";
@@ -175,6 +178,32 @@ public class IntentTreeFactory {
         biz.setChildren(List.of(oa, ins));
         roots.add(biz);
 
+        IntentNode weather = IntentNode.builder()
+                .id("weather")
+                .name("澶╂皵鏌ヨ")
+                .level(DOMAIN)
+                .kind(IntentKind.MCP)
+                .build();
+
+        IntentNode weatherToday = IntentNode.builder()
+                .id("weather-today")
+                .name("浠婃棩澶╂皵")
+                .level(CATEGORY)
+                .parentId(weather.getId())
+                .mcpToolId("weather_query")
+                .kind(IntentKind.MCP)
+                .description("鏌ヨ鐢ㄦ埛褰撳墠鎵€鍦ㄥ湴鍖虹殑鐪熷疄澶╂皵锛岄鍏堟敮鎸佸煄甯傘€佺粡绾害鍜屾潵鑷姹傚唴瀹圭殑鑷姩瀹氫綅銆?")
+                .examples(List.of(
+                        "鎴戜粖澶╂湰鍦板ぉ姘曟€庝箞鏍?",
+                        "鍖椾含浠婂ぉ澶╂皵",
+                        "鐜板湪涓婃捣鏈夋病鏈夐洦"
+                ))
+                .promptTemplate(MCP_WEATHER_PROMPT_TEMPLATE)
+                .paramPromptTemplate(MCP_WEATHER_PARAMETER_EXTRACT_PROMPT)
+                .build();
+        weather.setChildren(List.of(weatherToday));
+        roots.add(weather);
+
         IntentNode sales = IntentNode.builder()
                 .id("sales")
                 .name("閿€鍞眹鎬绘暟鎹粺璁?")
@@ -278,5 +307,31 @@ public class IntentTreeFactory {
 
             銆愮敤鎴烽棶棰樸€?
             %s
+            """;
+    private static final String MCP_WEATHER_PROMPT_TEMPLATE = """
+            你是天气查询助手。用户询问“当地今天的天气”“我这里下雨了吗”“未来几天预报”时，优先调用 weather_query 工具。
+            如果用户没有给出城市，但表达了“我这里”“当地”“当前位置”等含义，也可以直接调用工具，让服务端根据请求上下文自动定位。
+            不要编造工具没有返回的数据，回答时保持简洁、准确、中文输出。
+            {{INTENT_RULES}}
+
+            用户问题：
+            %s
+
+            工具参数提示：
+            %s
+            """;
+
+    private static final String MCP_WEATHER_PARAMETER_EXTRACT_PROMPT = """
+            请从用户问题中抽取天气查询参数，输出严格 JSON，不要输出额外解释。
+            如果用户说“当地”“我这边”“当前位置”，不要臆造 city，保持 city 为空，交给服务端根据请求上下文自动定位。
+            允许字段如下：
+            - city: 城市名，可选
+            - latitude: 纬度，可选，但如果提供则 longitude 也必须提供
+            - longitude: 经度，可选，但如果提供则 latitude 也必须提供
+            - ip: 可选，通常无需填写
+            - queryType: current 或 forecast，默认 current
+            - days: 预报天数，默认 3，范围 1-7
+            返回示例：
+            {"city":"北京","queryType":"current","days":3}
             """;
 }

@@ -6,7 +6,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
- * 会员模块安全相关配置。
+ * 会员Security配置
  */
 @Configuration
 public class MemberSecurityConfig {

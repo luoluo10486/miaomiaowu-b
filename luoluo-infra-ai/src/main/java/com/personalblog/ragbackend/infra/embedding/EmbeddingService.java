@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.infra.embedding;
 
 import java.util.List;
 
+/**
+ * 向量化服务接口
+ */
 public interface EmbeddingService {
 
     List<Float> embed(String text);

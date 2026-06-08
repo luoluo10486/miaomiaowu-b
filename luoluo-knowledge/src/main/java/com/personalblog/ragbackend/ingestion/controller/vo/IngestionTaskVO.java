@@ -10,6 +10,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Ingestion任务视图对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

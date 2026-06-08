@@ -21,6 +21,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 解析器节点
+ */
 @Component
 public class ParserNode implements IngestionNode {
 

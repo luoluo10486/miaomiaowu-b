@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * 知识库定时任务配置
+ * 知识调度配置属性
  */
 @Data
 @Validated

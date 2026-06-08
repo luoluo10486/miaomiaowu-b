@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.util.Map;
 
+/**
+ * 文档来源请求对象
+ */
 @Data
 public class DocumentSourceRequest {
     private SourceType type;

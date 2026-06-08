@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.infra.http;
 import com.personalblog.ragbackend.infra.config.AIModelProperties;
 import com.personalblog.ragbackend.infra.enums.ModelCapability;
 
+/**
+ * 模型URL解析器
+ */
 public final class ModelUrlResolver {
 
     private ModelUrlResolver() {

@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.rag.enums;
 
+/**
+ * 意图Kind枚举
+ */
 public enum IntentKind {
     KB(0),
     SYSTEM(1),

@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
- * Sa-Token 存储配置，将令牌数据持久化到 Redis。
+ * Sa令牌存储配置
  */
 @Configuration
 public class SaTokenStorageConfig {

@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 样例问题控制器
+ */
 @RestController
 @RequiredArgsConstructor
 public class SampleQuestionController {

@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+/**
+ * 查询Term映射视图对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+/**
+ * 知识Base服务实现
+ */
 @Slf4j
 @Service
 public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {

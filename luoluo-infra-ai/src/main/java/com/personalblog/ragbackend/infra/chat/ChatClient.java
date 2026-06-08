@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.infra.chat;
 import com.personalblog.ragbackend.infra.convention.ChatRequest;
 import com.personalblog.ragbackend.infra.model.ModelTarget;
 
+/**
+ * 对话客户端接口
+ */
 public interface ChatClient {
 
     String provider();

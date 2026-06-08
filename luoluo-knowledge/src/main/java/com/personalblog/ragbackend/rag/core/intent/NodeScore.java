@@ -4,6 +4,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 节点Score类
+ */
 @Data
 @NoArgsConstructor
 public class NodeScore {

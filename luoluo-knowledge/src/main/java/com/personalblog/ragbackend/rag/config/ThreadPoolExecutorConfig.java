@@ -10,6 +10,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * ThreadPoolExecutor配置
+ */
 @Configuration
 public class ThreadPoolExecutorConfig {
     private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();

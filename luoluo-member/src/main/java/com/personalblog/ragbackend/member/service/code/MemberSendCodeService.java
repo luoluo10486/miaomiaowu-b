@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 /**
- * 验证码发送路由服务，按 grantType 分发到具体发送策略。
+ * 会员Send验证码服务
  */
 @Service
 public class MemberSendCodeService {

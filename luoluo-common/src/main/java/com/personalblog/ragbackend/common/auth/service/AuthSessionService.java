@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.Locale;
 
 /**
- * 通用认证会话服务，负责登录会话签发后的摘要落库、查询与撤销。
+ * 认证会话服务
  */
 @Service
 public class AuthSessionService {

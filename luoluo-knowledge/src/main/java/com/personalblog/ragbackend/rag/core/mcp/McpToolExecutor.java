@@ -5,6 +5,9 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 
 import java.util.Map;
 
+/**
+ * MCPTool执行器
+ */
 public interface McpToolExecutor {
     Tool getToolDefinition();
 

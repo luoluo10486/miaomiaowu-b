@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import java.net.http.HttpClient;
 import java.util.concurrent.Executor;
 
+/**
+ * SiliconFlow对话客户端
+ */
 @Service
 public class SiliconFlowChatClient extends AbstractOpenAIStyleChatClient {
 

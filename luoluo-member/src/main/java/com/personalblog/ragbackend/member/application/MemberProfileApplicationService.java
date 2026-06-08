@@ -5,7 +5,7 @@ import com.personalblog.ragbackend.member.service.MemberProfileService;
 import org.springframework.stereotype.Service;
 
 /**
- * 资料应用服务，编排当前用户资料查询用例。
+ * 会员资料应用服务
  */
 @Service
 public class MemberProfileApplicationService {

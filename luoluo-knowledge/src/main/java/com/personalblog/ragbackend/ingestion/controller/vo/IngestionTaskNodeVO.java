@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.util.Date;
 import java.util.Map;
 
+/**
+ * Ingestion任务节点视图对象
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * 模型健康存储
+ */
 @Component
 public class ModelHealthStore {
     private final AIModelProperties aiProperties;

@@ -10,6 +10,9 @@ import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+/**
+ * 消息Feedback消费者
+ */
 @Component
 @RocketMQMessageListener(
         topic = "message-feedback_topic${unique-name:}",

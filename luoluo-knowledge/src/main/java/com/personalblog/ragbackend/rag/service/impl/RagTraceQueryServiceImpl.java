@@ -26,6 +26,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * RAG追踪查询服务实现
+ */
 @Service
 @RequiredArgsConstructor
 public class RagTraceQueryServiceImpl implements RagTraceQueryService {

@@ -14,6 +14,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * 对话TranscriptBoost后处理器
+ */
 @Component
 public class ChatTranscriptBoostPostProcessor implements SearchResultPostProcessor {
     private static final Set<String> CHAT_DOC_TYPES = Set.of("chat_qq_group", "chat_wechat_group");

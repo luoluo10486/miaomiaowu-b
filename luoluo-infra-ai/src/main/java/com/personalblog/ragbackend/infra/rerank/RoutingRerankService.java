@@ -12,6 +12,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 路由重排序服务
+ */
 @Service
 @Primary
 public class RoutingRerankService implements RerankService {

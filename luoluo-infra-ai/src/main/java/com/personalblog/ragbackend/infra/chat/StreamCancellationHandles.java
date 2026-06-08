@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.infra.chat;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * 流式取消Handles类
+ */
 public final class StreamCancellationHandles {
 
     private static final StreamCancellationHandle NOOP = () -> {

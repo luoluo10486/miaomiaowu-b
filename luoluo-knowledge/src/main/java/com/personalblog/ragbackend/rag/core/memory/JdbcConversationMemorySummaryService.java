@@ -31,6 +31,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
+/**
+ * JDBC会话记忆汇总服务
+ */
 @Slf4j
 @Service
 public class JdbcConversationMemorySummaryService implements ConversationMemorySummaryService {

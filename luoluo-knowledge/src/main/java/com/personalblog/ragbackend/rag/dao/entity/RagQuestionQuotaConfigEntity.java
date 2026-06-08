@@ -9,6 +9,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * RAG问题Quota配置实体
+ */
 @Data
 @TableName("t_rag_question_quota_config")
 public class RagQuestionQuotaConfigEntity {

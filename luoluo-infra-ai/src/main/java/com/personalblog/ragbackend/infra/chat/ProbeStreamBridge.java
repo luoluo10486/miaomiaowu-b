@@ -7,6 +7,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * 探针流式桥接器
+ */
 final class ProbeStreamBridge implements StreamCallback {
 
     private final StreamCallback downstream;

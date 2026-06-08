@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Knowledge chunk controller.
+ * 知识分块控制器
  */
 @Validated
 @RestController

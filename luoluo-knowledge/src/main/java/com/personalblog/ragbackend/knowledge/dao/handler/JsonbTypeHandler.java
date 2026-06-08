@@ -11,6 +11,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
+/**
+ * JsonbType处理器
+ */
 @MappedTypes(String.class)
 @MappedJdbcTypes(JdbcType.OTHER)
 public class JsonbTypeHandler extends BaseTypeHandler<String> {

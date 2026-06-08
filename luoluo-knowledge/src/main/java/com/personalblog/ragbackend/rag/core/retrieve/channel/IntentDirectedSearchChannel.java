@@ -16,6 +16,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+/**
+ * 意图定向搜索通道
+ */
 @Slf4j
 @Component
 public class IntentDirectedSearchChannel implements SearchChannel {

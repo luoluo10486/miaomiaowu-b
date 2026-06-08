@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.member.dto.user;
 
+/**
+ * 用户更新请求对象
+ */
 public class UserUpdateRequest {
     private String username;
     private String password;

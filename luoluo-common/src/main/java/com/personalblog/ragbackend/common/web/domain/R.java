@@ -7,7 +7,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * 统一接口响应对象，返回 `code`、`message`、`data` 三段结构。
+ * 统一返回对象
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class R<T> implements Serializable {

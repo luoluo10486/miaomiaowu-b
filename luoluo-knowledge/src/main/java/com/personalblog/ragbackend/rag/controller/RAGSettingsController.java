@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * RAG settings controller.
+ * RAGSettings控制器
  */
 @RestController
 @RequiredArgsConstructor

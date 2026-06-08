@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * HTTP响应对象辅助类
+ */
 public final class HttpResponseHelper {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();

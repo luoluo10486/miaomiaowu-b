@@ -4,6 +4,9 @@ import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * RAG速率限流配置属性
+ */
 @Data
 @Configuration
 public class RAGRateLimitProperties {

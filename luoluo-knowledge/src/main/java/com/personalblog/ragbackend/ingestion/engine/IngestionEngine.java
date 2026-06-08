@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Ingestion引擎
+ */
 @Slf4j
 @Component
 public class IngestionEngine {

@@ -23,6 +23,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * 默认意图ClassifierAclTest类
+ */
 @ExtendWith(MockitoExtension.class)
 class DefaultIntentClassifierAclTest {
     @Mock

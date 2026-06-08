@@ -7,7 +7,7 @@ import java.time.Duration;
 import java.util.Locale;
 
 /**
- * 验证码发送限流服务，负责控制同一目标在固定时间窗口内的发送频率。
+ * 验证码Send限流服务
  */
 @Service
 public class CaptchaSendLimitService {

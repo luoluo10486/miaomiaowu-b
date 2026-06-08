@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 查询Term映射实体
+ */
 @TableName("t_query_term_mapping")
 @Data
 @Builder

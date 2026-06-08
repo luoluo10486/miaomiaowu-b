@@ -3,7 +3,7 @@ package com.personalblog.ragbackend.member.dto.auth;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * 登录请求参数，按不同登录方式承载对应的认证字段。
+ * 会员登录请求对象
  */
 public class MemberLoginRequest {
     @NotBlank(message = "grantType 不能为空")

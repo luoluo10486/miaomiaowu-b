@@ -27,6 +27,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 默认意图Classifier类
+ */
 @Service
 public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegistry {
     private static final int MAX_INTENT_COUNT = 8;

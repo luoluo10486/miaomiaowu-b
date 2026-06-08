@@ -19,6 +19,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * SiliconFlow向量化客户端Test类
+ */
 class SiliconFlowEmbeddingClientTest {
 
     @Test

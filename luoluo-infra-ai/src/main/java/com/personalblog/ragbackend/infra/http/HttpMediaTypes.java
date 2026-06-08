@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.infra.http;
 
+/**
+ * HTTPMediaTypes类
+ */
 public final class HttpMediaTypes {
 
     public static final String APPLICATION_JSON = "application/json";

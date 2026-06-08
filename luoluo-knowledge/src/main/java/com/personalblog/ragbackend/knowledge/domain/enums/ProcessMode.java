@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Locale;
 
+/**
+ * ProcessMode枚举
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ProcessMode {

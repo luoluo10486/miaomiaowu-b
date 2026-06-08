@@ -17,6 +17,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * 密码登录StrategyTest类
+ */
 @ExtendWith(MockitoExtension.class)
 class PasswordLoginStrategyTest {
     @Mock

@@ -7,7 +7,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * 认证摘要服务，用于统一生成敏感值的 SHA-256 摘要。
+ * 认证Digest服务
  */
 @Service
 public class AuthDigestService {

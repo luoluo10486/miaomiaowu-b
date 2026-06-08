@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.infra.http;
 
+/**
+ * 模型客户端ErrorType枚举
+ */
 public enum ModelClientErrorType {
     UNAUTHORIZED,
     RATE_LIMITED,

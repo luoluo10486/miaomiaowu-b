@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 样例问题实体
+ */
 @TableName("t_sample_question")
 @Data
 @Builder

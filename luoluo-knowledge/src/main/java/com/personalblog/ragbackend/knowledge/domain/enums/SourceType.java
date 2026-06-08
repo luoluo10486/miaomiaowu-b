@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 来源Type枚举
+ */
 @Getter
 @RequiredArgsConstructor
 public enum SourceType {

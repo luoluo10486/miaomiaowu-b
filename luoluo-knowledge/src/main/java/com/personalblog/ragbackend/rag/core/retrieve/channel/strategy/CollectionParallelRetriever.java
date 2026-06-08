@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+/**
+ * Collection并行检索器类
+ */
 public class CollectionParallelRetriever extends AbstractParallelRetriever<String> {
     private static final Logger log = LoggerFactory.getLogger(CollectionParallelRetriever.class);
 

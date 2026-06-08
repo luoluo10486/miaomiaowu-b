@@ -5,6 +5,9 @@ import lombok.Data;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Ingestion流程视图对象
+ */
 @Data
 public class IngestionPipelineVO {
     private String id;

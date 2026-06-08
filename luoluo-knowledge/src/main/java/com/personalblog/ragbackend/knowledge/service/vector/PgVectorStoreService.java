@@ -17,6 +17,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * PG向量存储服务
+ */
 @Service
 @ConditionalOnProperty(name = "rag.vector.type", havingValue = "pg")
 public class PgVectorStoreService implements VectorStoreService {

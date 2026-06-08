@@ -4,6 +4,9 @@ import com.personalblog.ragbackend.rag.config.MemoryProperties;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
+/**
+ * 记忆配置校验器
+ */
 public class MemoryConfigValidator implements ConstraintValidator<ValidMemoryConfig, MemoryProperties> {
 
     @Override

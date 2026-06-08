@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * Ingestion task 管理控制器。
+ * Ingestion任务控制器
  */
 @RestController
 @RequiredArgsConstructor

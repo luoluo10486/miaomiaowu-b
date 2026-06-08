@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.member.dto.user;
 
+/**
+ * 当前用户视图对象
+ */
 public class CurrentUserVO {
     private String userId;
     private String username;

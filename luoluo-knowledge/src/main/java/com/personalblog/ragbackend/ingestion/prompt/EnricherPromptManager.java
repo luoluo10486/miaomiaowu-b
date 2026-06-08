@@ -5,6 +5,9 @@ import com.personalblog.ragbackend.ingestion.domain.enums.ChunkEnrichType;
 import java.util.EnumMap;
 import java.util.Map;
 
+/**
+ * 补充器提示词管理器
+ */
 public final class EnricherPromptManager {
 
     private static final Map<ChunkEnrichType, String> DEFAULT_SYSTEM_PROMPTS = new EnumMap<>(ChunkEnrichType.class);

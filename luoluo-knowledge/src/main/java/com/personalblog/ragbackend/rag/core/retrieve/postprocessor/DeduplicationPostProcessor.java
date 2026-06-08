@@ -11,6 +11,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 去重PostProcessor类
+ */
 @Component
 public class DeduplicationPostProcessor implements SearchResultPostProcessor {
 

@@ -25,6 +25,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * 知识文件存储服务
+ */
 @Service
 @Slf4j
 public class KnowledgeFileStorageService {

@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.common.web.domain;
 
+/**
+ * 返回结果工具类
+ */
 public final class Results {
 
     private Results() {

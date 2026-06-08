@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * RAG查询流程
+ */
 @Service
 public class RagQueryPipeline {
     private final QueryRewriteService queryRewriteService;

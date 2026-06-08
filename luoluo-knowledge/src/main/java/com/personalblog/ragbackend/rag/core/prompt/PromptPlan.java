@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 提示词Plan类
+ */
 @Data
 @RequiredArgsConstructor
 @AllArgsConstructor

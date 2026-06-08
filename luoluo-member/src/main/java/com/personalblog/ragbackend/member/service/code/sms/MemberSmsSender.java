@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.member.service.code.sms;
 
 /**
- * 会员短信发送器接口。
+ * 会员短信发送器接口
  */
 public interface MemberSmsSender {
     /**

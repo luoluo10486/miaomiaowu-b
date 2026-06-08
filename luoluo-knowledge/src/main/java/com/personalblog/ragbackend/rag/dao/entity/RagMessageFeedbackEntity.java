@@ -8,6 +8,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
+/**
+ * RAG消息Feedback实体
+ */
 @TableName("t_message_feedback")
 public class RagMessageFeedbackEntity {
     @TableId(value = "id", type = IdType.AUTO)

@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.member.dto.auth;
 
 /**
- * 登录响应数据，返回令牌信息和基础用户摘要。
+ * 会员登录响应对象
  */
 public record MemberLoginResponse(
         String token,

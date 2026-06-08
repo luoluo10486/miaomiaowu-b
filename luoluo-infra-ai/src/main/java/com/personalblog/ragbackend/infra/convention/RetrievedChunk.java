@@ -4,6 +4,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Retrieved分块类
+ */
 public class RetrievedChunk {
 
     private String id;

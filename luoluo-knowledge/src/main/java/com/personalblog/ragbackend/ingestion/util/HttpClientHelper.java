@@ -10,6 +10,9 @@ import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * HTTP客户端辅助类
+ */
 @Component
 public class HttpClientHelper {
 

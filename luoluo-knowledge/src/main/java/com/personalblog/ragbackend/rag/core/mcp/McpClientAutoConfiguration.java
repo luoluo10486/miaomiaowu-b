@@ -17,6 +17,9 @@ import org.springframework.context.annotation.Configuration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * MCP客户端自动配置
+ */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor

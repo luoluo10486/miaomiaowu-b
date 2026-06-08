@@ -3,7 +3,7 @@ package com.personalblog.ragbackend.common.context;
 import com.alibaba.ttl.TransmittableThreadLocal;
 
 /**
- * 登录用户上下文。
+ * 用户上下文
  */
 public final class UserContext {
     private static final TransmittableThreadLocal<LoginUser> CONTEXT = new TransmittableThreadLocal<>();

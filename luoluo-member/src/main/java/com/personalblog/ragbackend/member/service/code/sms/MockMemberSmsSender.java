@@ -3,7 +3,7 @@ package com.personalblog.ragbackend.member.service.code.sms;
 import java.util.UUID;
 
 /**
- * 本地调试使用的 mock 短信发送器。
+ * 模拟会员短信发送器类
  */
 public class MockMemberSmsSender implements MemberSmsSender {
     /**

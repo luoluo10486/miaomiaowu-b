@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.ingestion.domain.enums;
 
+/**
+ * Ingestion节点Type枚举
+ */
 public enum IngestionNodeType {
     FETCHER("fetcher"),
     PARSER("parser"),

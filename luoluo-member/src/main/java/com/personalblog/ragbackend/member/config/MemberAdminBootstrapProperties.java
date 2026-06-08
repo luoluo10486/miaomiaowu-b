@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.member.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * 会员管理端Bootstrap配置属性
+ */
 @ConfigurationProperties(prefix = "app.member.bootstrap.admin")
 public class MemberAdminBootstrapProperties {
     /**

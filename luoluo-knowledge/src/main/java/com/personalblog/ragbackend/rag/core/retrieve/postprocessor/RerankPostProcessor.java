@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * 重排序后处理器
+ */
 @Slf4j
 @Component
 public class RerankPostProcessor implements SearchResultPostProcessor {

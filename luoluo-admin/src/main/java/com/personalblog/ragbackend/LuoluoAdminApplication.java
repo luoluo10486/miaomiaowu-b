@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 
 /**
- * 后台管理端启动入口。
+ * 管理端启动类
  */
 @SpringBootApplication(scanBasePackages = "com.personalblog.ragbackend")
 @EnableScheduling

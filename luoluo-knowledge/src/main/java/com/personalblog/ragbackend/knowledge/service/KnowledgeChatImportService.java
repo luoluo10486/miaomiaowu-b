@@ -35,6 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 知识对话导入服务
+ */
 @Service
 public class KnowledgeChatImportService {
     private final KnowledgeBaseMapper knowledgeBaseMapper;

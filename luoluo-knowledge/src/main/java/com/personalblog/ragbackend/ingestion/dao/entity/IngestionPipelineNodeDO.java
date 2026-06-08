@@ -10,6 +10,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * Ingestion流程节点数据对象
+ */
 @TableName(value = "t_ingestion_pipeline_node", autoResultMap = true)
 @Data
 public class IngestionPipelineNodeDO {

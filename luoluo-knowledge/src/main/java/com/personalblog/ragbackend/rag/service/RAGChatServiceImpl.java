@@ -17,6 +17,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.concurrent.Executor;
 
+/**
+ * RAG对话服务实现
+ */
 @Service
 public class RAGChatServiceImpl implements RAGChatService {
     private final StreamChatPipeline chatPipeline;

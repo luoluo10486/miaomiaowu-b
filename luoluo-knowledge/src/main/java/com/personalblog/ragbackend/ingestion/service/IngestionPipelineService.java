@@ -7,6 +7,9 @@ import com.personalblog.ragbackend.ingestion.controller.request.IngestionPipelin
 import com.personalblog.ragbackend.ingestion.controller.vo.IngestionPipelineVO;
 import com.personalblog.ragbackend.ingestion.domain.pipeline.PipelineDefinition;
 
+/**
+ * Ingestion流程服务接口
+ */
 public interface IngestionPipelineService {
 
     IngestionPipelineVO create(IngestionPipelineCreateRequest request);

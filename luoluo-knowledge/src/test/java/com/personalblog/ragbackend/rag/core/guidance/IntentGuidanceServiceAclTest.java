@@ -20,6 +20,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+/**
+ * 意图引导服务AclTest类
+ */
 @ExtendWith(MockitoExtension.class)
 class IntentGuidanceServiceAclTest {
     @Mock

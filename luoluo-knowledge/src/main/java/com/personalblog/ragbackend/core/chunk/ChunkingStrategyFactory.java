@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * ChunkingStrategy工厂
+ */
 @Component
 public class ChunkingStrategyFactory {
     private final Map<ChunkingMode, ChunkingStrategy> strategyMap;

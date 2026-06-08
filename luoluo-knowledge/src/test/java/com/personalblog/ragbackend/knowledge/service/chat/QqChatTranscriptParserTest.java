@@ -8,6 +8,9 @@ import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Qq对话Transcript解析器Test类
+ */
 class QqChatTranscriptParserTest {
 
     private final QqChatTranscriptParser parser = new QqChatTranscriptParser();

@@ -30,6 +30,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
+/**
+ * 检索引擎
+ */
 @Service
 public class RetrievalEngine {
     private final SearchChannelProperties searchProperties;

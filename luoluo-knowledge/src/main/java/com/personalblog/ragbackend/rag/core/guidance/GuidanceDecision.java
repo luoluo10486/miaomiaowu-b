@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.rag.core.guidance;
 
+/**
+ * 引导Decision类
+ */
 public class GuidanceDecision {
     public enum Action {
         NONE,

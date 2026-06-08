@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 节点配置
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.infra.convention;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 对话请求对象
+ */
 public class ChatRequest {
 
     private List<ChatMessage> messages = new ArrayList<>();

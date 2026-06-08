@@ -9,6 +9,9 @@ import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeChunkVO;
 
 import java.util.List;
 
+/**
+ * 知识分块服务接口
+ */
 public interface KnowledgeChunkService {
     IPage<KnowledgeChunkVO> pageQuery(String docId, KnowledgeChunkPageRequest requestParam);
     KnowledgeChunkVO create(String docId, KnowledgeChunkCreateRequest requestParam);

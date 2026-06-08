@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 索引器节点
+ */
 @Component
 public class IndexerNode implements IngestionNode {
 

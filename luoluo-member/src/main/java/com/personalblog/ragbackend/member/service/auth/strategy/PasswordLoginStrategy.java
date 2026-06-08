@@ -12,6 +12,9 @@ import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+/**
+ * 密码登录策略
+ */
 @Service
 public class PasswordLoginStrategy implements MemberLoginStrategy {
     private final MemberUserService memberUserService;

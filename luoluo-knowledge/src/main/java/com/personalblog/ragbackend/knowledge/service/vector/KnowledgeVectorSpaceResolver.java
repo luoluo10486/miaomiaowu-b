@@ -9,7 +9,13 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+/**
+ * 知识向量Space解析器
+ */
 @Component
+/**
+ * 知识向量Space解析器
+ */
 public class KnowledgeVectorSpaceResolver {
     private final RAGDefaultProperties ragDefaultProperties;
     private final SearchChannelProperties searchChannelProperties;

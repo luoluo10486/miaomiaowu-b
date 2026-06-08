@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * RAG问题Quota控制器
+ */
 @RestController
 @RequiredArgsConstructor
 @MemberLoginRequired

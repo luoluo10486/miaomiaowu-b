@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.rag.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * RAG配置配置属性
+ */
 @Configuration
 public class RAGConfigProperties {
     @Value("${rag.query-rewrite.enabled:true}")

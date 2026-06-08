@@ -23,6 +23,9 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * 会员认证服务Test类
+ */
 @ExtendWith(MockitoExtension.class)
 class MemberAuthServiceTest {
     @Mock

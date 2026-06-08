@@ -10,6 +10,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 知识向量Ref数据对象
+ */
 @TableName(value = "t_knowledge_vector_ref", autoResultMap = true)
 @Data
 public class KnowledgeVectorRefDO {

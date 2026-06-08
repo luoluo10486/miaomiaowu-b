@@ -10,6 +10,9 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 会员Sa令牌角色配置
+ */
 @Component
 public class MemberSaTokenRoleConfig implements StpInterface {
     private final MemberUserService memberUserService;

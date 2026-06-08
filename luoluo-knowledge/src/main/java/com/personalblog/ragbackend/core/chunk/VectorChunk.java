@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 向量分块类
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

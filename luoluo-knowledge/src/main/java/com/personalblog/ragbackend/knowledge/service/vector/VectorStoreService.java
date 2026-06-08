@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 向量存储服务接口
+ */
 public interface VectorStoreService {
 
     void upsert(KnowledgeVectorSpace vectorSpace, List<KnowledgeVectorDocument> documents);

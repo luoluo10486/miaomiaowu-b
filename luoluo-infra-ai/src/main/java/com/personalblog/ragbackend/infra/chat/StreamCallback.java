@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.infra.chat;
 
+/**
+ * 流式回调
+ */
 public interface StreamCallback {
 
     void onContent(String content);

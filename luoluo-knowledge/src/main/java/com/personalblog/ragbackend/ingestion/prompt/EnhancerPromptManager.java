@@ -5,6 +5,9 @@ import com.personalblog.ragbackend.ingestion.domain.enums.EnhanceType;
 import java.util.EnumMap;
 import java.util.Map;
 
+/**
+ * 增强器提示词管理器
+ */
 public final class EnhancerPromptManager {
 
     private static final Map<EnhanceType, String> DEFAULT_SYSTEM_PROMPTS = new EnumMap<>(EnhanceType.class);

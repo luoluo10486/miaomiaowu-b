@@ -92,6 +92,9 @@ import java.util.Date;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 知识文档服务实现
+ */
 @Service
 @Slf4j
 public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {

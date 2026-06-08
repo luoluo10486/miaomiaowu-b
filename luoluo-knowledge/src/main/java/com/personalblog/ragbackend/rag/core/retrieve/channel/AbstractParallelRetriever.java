@@ -12,6 +12,9 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+/**
+ * 抽象并行检索器类
+ */
 public abstract class AbstractParallelRetriever<T> {
     protected final Logger log = LoggerFactory.getLogger(getClass());
     private final Executor executor;

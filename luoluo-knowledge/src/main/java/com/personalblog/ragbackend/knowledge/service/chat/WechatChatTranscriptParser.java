@@ -22,6 +22,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Wechat对话Transcript解析器
+ */
 @Service
 public class WechatChatTranscriptParser implements ChatTranscriptParser {
     public static final String PLATFORM = "wechat";

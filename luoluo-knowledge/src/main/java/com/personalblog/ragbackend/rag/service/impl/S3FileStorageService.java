@@ -25,6 +25,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 
+/**
+ * S3文件存储服务
+ */
 @Service
 @RequiredArgsConstructor
 public class S3FileStorageService implements FileStorageService {

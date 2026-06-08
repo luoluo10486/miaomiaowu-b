@@ -2,6 +2,9 @@ package com.personalblog.ragbackend.knowledge.controller.request;
 
 import lombok.Data;
 
+/**
+ * 知识文档更新请求对象
+ */
 @Data
 public class KnowledgeDocumentUpdateRequest {
     private String docName;

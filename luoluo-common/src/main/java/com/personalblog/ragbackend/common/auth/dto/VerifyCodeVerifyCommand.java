@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.common.auth.dto;
 
 /**
- * 验证码校验命令，描述验证码核销所需的条件与开关。
+ * 校验验证码校验Command记录类
  */
 public record VerifyCodeVerifyCommand(
         String namespace,

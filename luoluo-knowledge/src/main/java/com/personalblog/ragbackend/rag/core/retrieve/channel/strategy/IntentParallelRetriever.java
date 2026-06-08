@@ -14,6 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+/**
+ * 意图并行检索器类
+ */
 public class IntentParallelRetriever extends AbstractParallelRetriever<IntentParallelRetriever.IntentTask> {
     private static final Logger log = LoggerFactory.getLogger(IntentParallelRetriever.class);
 

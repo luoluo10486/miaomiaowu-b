@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * RAG会话服务
+ */
 @Service
 public class RagConversationService {
     private final ConversationMemoryService conversationMemoryService;

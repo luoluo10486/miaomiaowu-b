@@ -16,6 +16,9 @@ import java.util.Locale;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
+/**
+ * 公开会员认证应用服务
+ */
 @Service
 public class PublicMemberAuthApplicationService {
     private static final String IMAGE_CAPTCHA_NAMESPACE = "member_send_code";

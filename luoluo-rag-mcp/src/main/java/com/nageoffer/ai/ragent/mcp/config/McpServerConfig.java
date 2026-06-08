@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.mcp.config;
 
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
@@ -25,6 +26,9 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 
 /**
@@ -36,6 +40,7 @@ public class McpServerConfig {
     @Bean
     public HttpServletStreamableServerTransportProvider transportProvider() {
         return HttpServletStreamableServerTransportProvider.builder()
+                .contextExtractor(this::extractTransportContext)
                 .build();
     }
 
@@ -52,5 +57,26 @@ public class McpServerConfig {
                 .serverInfo("ragent-mcp-server", "0.0.1")
                 .tools(toolSpecs)
                 .build();
+    }
+
+    private McpTransportContext extractTransportContext(HttpServletRequest request) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        putHeader(context, request, "X-Forwarded-For");
+        putHeader(context, request, "X-Real-IP");
+        putHeader(context, request, "User-Agent");
+        if (request != null && request.getRemoteAddr() != null && !request.getRemoteAddr().isBlank()) {
+            context.put("remoteAddr", request.getRemoteAddr());
+        }
+        return McpTransportContext.create(context);
+    }
+
+    private void putHeader(Map<String, Object> context, HttpServletRequest request, String headerName) {
+        if (request == null) {
+            return;
+        }
+        String value = request.getHeader(headerName);
+        if (value != null && !value.isBlank()) {
+            context.put(headerName, value);
+        }
     }
 }

@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.infra.exception;
 import com.personalblog.ragbackend.infra.errorcode.BaseErrorCode;
 import com.personalblog.ragbackend.infra.errorcode.IErrorCode;
 
+/**
+ * 远程异常类
+ */
 public class RemoteException extends AbstractException {
 
     public RemoteException(String message) {

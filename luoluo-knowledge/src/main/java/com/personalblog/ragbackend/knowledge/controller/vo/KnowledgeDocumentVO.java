@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * Knowledge document view object.
+ * 知识文档视图对象
  */
 @Data
 public class KnowledgeDocumentVO {

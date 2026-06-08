@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 公开会员认证控制器
+ */
 @SaIgnore
 @RestController
 @RequestMapping("/luoluo/system/public/member/auth")

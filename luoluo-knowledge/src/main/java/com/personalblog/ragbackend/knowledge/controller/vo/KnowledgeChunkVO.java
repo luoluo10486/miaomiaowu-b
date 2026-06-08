@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * Knowledge chunk view object.
+ * 知识分块视图对象
  */
 @Data
 public class KnowledgeChunkVO {

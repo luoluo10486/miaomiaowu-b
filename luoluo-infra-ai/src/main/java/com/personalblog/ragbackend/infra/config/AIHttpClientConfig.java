@@ -9,6 +9,9 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.Executor;
 
+/**
+ * AIHTTP客户端配置
+ */
 @Configuration
 public class AIHttpClientConfig {
 

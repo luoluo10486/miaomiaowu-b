@@ -6,6 +6,9 @@ import lombok.Data;
 
 import java.util.Map;
 
+/**
+ * Ingestion任务创建请求对象
+ */
 @Data
 public class IngestionTaskCreateRequest {
     private String pipelineId;

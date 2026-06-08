@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+/**
+ * 默认会话记忆服务
+ */
 @Service
 public class DefaultConversationMemoryService implements ConversationMemoryService {
     private final ConversationMemoryStore memoryStore;

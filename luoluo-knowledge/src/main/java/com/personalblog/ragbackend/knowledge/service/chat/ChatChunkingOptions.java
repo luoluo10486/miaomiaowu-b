@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.knowledge.service.chat;
 
+/**
+ * 对话ChunkingOptions记录类
+ */
 public record ChatChunkingOptions(
         int minMessages,
         int maxMessages,

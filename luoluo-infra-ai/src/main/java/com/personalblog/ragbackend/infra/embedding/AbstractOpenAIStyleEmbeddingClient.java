@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 抽象OpenAI风格向量化客户端
+ */
 public abstract class AbstractOpenAIStyleEmbeddingClient implements EmbeddingClient {
     private static final Logger log = LoggerFactory.getLogger(AbstractOpenAIStyleEmbeddingClient.class);
 

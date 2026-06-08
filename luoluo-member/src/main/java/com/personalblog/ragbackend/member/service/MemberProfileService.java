@@ -9,7 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 /**
- * 会员资料领域服务，负责当前登录用户资料读取。
+ * 会员资料服务
  */
 @Service
 public class MemberProfileService {

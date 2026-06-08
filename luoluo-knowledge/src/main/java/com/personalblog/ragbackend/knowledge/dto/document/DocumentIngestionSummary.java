@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.knowledge.dto.document;
 
+/**
+ * 文档Ingestion汇总
+ */
 public record DocumentIngestionSummary(
         boolean success,
         String baseCode,

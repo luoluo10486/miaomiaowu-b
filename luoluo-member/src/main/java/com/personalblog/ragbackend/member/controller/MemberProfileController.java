@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 资料控制器，对外提供当前登录用户信息查询接口。
+ * 会员资料控制器
  */
 @RestController
 @RequestMapping("/luoluo/member/profile")

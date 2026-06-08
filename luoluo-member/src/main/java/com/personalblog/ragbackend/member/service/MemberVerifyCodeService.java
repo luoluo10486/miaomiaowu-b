@@ -13,6 +13,9 @@ import java.util.Locale;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
+/**
+ * 会员校验验证码服务
+ */
 @Service
 public class MemberVerifyCodeService {
     private static final Logger log = LoggerFactory.getLogger(MemberVerifyCodeService.class);

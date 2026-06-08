@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.Locale;
 
 /**
- * 用户领域服务，封装系统用户的查询规则。
+ * 会员用户服务
  */
 @Service
 public class MemberUserService {

@@ -4,6 +4,9 @@ import com.personalblog.ragbackend.infra.model.ModelTarget;
 
 import java.util.List;
 
+/**
+ * 向量化客户端接口
+ */
 public interface EmbeddingClient {
 
     String provider();

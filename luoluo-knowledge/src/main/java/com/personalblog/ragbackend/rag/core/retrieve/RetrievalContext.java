@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 检索上下文
+ */
 @Data
 @Builder
 public class RetrievalContext {

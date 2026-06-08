@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.member.dto.profile;
 
 /**
- * 当前登录用户资料响应对象。
+ * 会员资料响应对象
  */
 public record MemberProfileResponse(
         Long id,

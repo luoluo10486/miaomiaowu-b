@@ -4,6 +4,9 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
+/**
+ * 会员Test启动类
+ */
 @SpringBootApplication(scanBasePackages = {
         "com.personalblog.ragbackend.common",
         "com.personalblog.ragbackend.member"

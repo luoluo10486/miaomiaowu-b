@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+/**
+ * StructureAwareChunking策略
+ */
 @Component
 public class StructureAwareChunkingStrategy implements ChunkingStrategy {
     private static final Pattern MARKDOWN_HEADING = Pattern.compile("^\\s{0,3}#{1,6}\\s+.+$");

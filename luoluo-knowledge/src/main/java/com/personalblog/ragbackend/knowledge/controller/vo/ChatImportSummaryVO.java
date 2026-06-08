@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * 对话导入汇总视图对象
+ */
 @Data
 @AllArgsConstructor
 public class ChatImportSummaryVO {

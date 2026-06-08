@@ -3,6 +3,9 @@ package com.personalblog.ragbackend.core.chunk;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * ChunkingMode枚举
+ */
 public enum ChunkingMode {
     FIXED_SIZE("fixed_size", "Fixed size", true),
     STRUCTURE_AWARE("structure_aware", "Structure aware", true),

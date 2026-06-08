@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+/**
+ * RAG追踪Record服务实现
+ */
 @Service
 public class RagTraceRecordServiceImpl implements RagTraceRecordService {
     private final RagTraceRunMapper ragTraceRunMapper;

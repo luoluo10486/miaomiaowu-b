@@ -1,7 +1,7 @@
 package com.personalblog.ragbackend.common.web.constant;
 
 /**
- * 统一接口返回码定义。
+ * 结果验证码类
  */
 public final class ResultCode {
     public static final int SUCCESS = 0;

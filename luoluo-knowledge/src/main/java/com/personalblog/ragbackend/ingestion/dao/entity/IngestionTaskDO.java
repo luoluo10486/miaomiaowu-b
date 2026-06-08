@@ -10,6 +10,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * Ingestion任务数据对象
+ */
 @TableName(value = "t_ingestion_task", autoResultMap = true)
 @Data
 public class IngestionTaskDO {

@@ -21,6 +21,9 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Tika文档解析服务
+ */
 @Service
 public class TikaDocumentParseService implements DocumentParser {
     private static final Logger log = LoggerFactory.getLogger(TikaDocumentParseService.class);

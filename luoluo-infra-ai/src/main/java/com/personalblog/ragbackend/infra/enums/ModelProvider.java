@@ -1,5 +1,8 @@
 package com.personalblog.ragbackend.infra.enums;
 
+/**
+ * 模型Provider枚举
+ */
 public enum ModelProvider {
     OLLAMA("ollama"),
     BAI_LIAN("bailian"),

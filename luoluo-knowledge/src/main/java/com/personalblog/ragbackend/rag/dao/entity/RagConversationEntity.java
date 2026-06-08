@@ -8,6 +8,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
+/**
+ * RAG会话实体
+ */
 @TableName("t_conversation")
 public class RagConversationEntity {
     @TableId(value = "id", type = IdType.AUTO)

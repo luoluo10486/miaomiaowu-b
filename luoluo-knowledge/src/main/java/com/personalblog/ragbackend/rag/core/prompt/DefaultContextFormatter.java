@@ -19,6 +19,9 @@ import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Collectors;
 
+/**
+ * 默认上下文Formatter类
+ */
 @Service
 public class DefaultContextFormatter implements ContextFormatter {
     private final PromptTemplateLoader promptTemplateLoader;
