@@ -1,6 +1,7 @@
 package com.personalblog.ragbackend.rag.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -17,8 +18,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SampleQuestionEntity {
-    @TableId("id")
-    public String id;
+    @TableId(value = "id", type = IdType.AUTO)
+    public Long id;
     @TableField("kb_id")
     public Long kbId;
     @TableField("title")

@@ -30,9 +30,9 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
 
     @Override
     public String create(SampleQuestionCreateRequest requestParam) {
-        Assert.notNull(requestParam, () -> new ClientException("璇锋眰涓嶈兘涓虹┖"));
+        Assert.notNull(requestParam, () -> new ClientException("样例问题请求不能为空。"));
         String question = StrUtil.trimToNull(requestParam.getQuestion());
-        Assert.notBlank(question, () -> new ClientException("绀轰緥闂鍐呭涓嶈兘涓虹┖"));
+        Assert.notBlank(question, () -> new ClientException("样例问题内容不能为空。"));
 
         SampleQuestionEntity record = SampleQuestionEntity.builder()
                 .title(StrUtil.trimToNull(requestParam.getTitle()))
@@ -40,17 +40,17 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
                 .question(question)
                 .build();
         sampleQuestionMapper.insert(record);
-        return record.getId();
+        return record.getId() == null ? null : String.valueOf(record.getId());
     }
 
     @Override
     public void update(String id, SampleQuestionUpdateRequest requestParam) {
-        Assert.notNull(requestParam, () -> new ClientException("璇锋眰涓嶈兘涓虹┖"));
+        Assert.notNull(requestParam, () -> new ClientException("样例问题请求不能为空。"));
         SampleQuestionEntity record = loadById(id);
 
         if (requestParam.getQuestion() != null) {
             String question = StrUtil.trimToNull(requestParam.getQuestion());
-            Assert.notBlank(question, () -> new ClientException("绀轰緥闂鍐呭涓嶈兘涓虹┖"));
+            Assert.notBlank(question, () -> new ClientException("样例问题内容不能为空。"));
             record.setQuestion(question);
         }
         if (requestParam.getTitle() != null) {
@@ -113,24 +113,34 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
     }
 
     private SampleQuestionEntity loadById(String id) {
+        Long parsedId = parseId(id);
         SampleQuestionEntity record = sampleQuestionMapper.selectOne(
                 Wrappers.lambdaQuery(SampleQuestionEntity.class)
-                        .eq(SampleQuestionEntity::getId, id)
+                        .eq(SampleQuestionEntity::getId, parsedId)
                         .eq(SampleQuestionEntity::getDeleted, 0)
         );
-                Assert.notNull(record, () -> new ClientException("示例问题不存在"));
+        Assert.notNull(record, () -> new ClientException("样例问题不存在。"));
         return record;
     }
 
     private SampleQuestionVO toVO(SampleQuestionEntity record) {
         return SampleQuestionVO.builder()
-                .id(record.getId())
+                .id(record.getId() == null ? null : String.valueOf(record.getId()))
                 .title(record.getTitle())
                 .description(record.getDescription())
                 .question(record.getQuestion())
                 .createTime(toDate(record.getCreatedAt()))
                 .updateTime(toDate(record.getUpdatedAt()))
                 .build();
+    }
+
+    private Long parseId(String id) {
+        Assert.notBlank(id, () -> new ClientException("样例问题 ID 不能为空。"));
+        try {
+            return Long.valueOf(id.trim());
+        } catch (NumberFormatException ex) {
+            throw new ClientException("样例问题 ID 格式不正确。");
+        }
     }
 
     private Date toDate(java.time.LocalDateTime time) {
