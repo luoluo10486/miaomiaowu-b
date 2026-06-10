@@ -6,6 +6,8 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.Optional;
 public class WeatherQueryService {
 
     private static final int DEFAULT_FORECAST_DAYS = 3;
+    private static final Logger log = LoggerFactory.getLogger(WeatherQueryService.class);
 
     private final WeatherApiClient weatherApiClient;
 
@@ -29,17 +32,30 @@ public class WeatherQueryService {
             Map<String, Object> args = request == null || request.arguments() == null ? Map.of() : request.arguments();
             String queryType = defaultIfBlank(stringArg(args, "queryType"), "current");
             int forecastDays = clamp(intArg(args, "days"), DEFAULT_FORECAST_DAYS, 1, 7);
+            log.info("weather_query request received, args={}, queryType={}, forecastDays={}, transport={}",
+                    args, queryType, forecastDays, summarizeTransportContext(transportContext));
 
             WeatherLocation location = resolveLocation(args, transportContext)
                     .orElseThrow(() -> new IllegalArgumentException("无法自动定位用户位置，请补充城市名、经纬度或 IP。"));
+            log.info("weather_query location resolved, label={}, latitude={}, longitude={}",
+                    location.label(), location.latitude(), location.longitude());
 
             WeatherSnapshot snapshot = weatherApiClient.fetchWeather(location, forecastDays);
             String content = "forecast".equalsIgnoreCase(queryType)
                     ? formatForecast(snapshot, forecastDays)
                     : formatCurrent(snapshot);
-            return successResult(content);
+            CallToolResult result = successResult(content);
+            log.info("weather_query response ready, isError={}, preview={}",
+                    result.isError(), previewText(content));
+            return result;
         } catch (Exception exception) {
-            return errorResult("天气查询失败: " + messageOf(exception));
+            log.warn("weather_query failed, type={}, message={}",
+                    exception.getClass().getSimpleName(), messageOf(exception), exception);
+            String errorMessage = "天气查询失败: " + messageOf(exception);
+            CallToolResult result = errorResult(errorMessage);
+            log.info("weather_query error response ready, isError={}, preview={}",
+                    result.isError(), previewText(errorMessage));
+            return result;
         }
     }
 
@@ -60,7 +76,7 @@ public class WeatherQueryService {
             if (resolved.isPresent()) {
                 return resolved;
             }
-            throw new IllegalArgumentException("未找到城市「" + city.trim() + "」，请换一个更具体的城市名或直接提供经纬度。");
+            throw new IllegalArgumentException("未找到城市“" + city.trim() + "”，请换一个更具体的城市名或直接提供经纬度。");
         }
 
         for (String candidate : resolveIpCandidates(args, transportContext)) {
@@ -141,7 +157,7 @@ public class WeatherQueryService {
         DailyWeather daily = forecast.daily();
         StringBuilder sb = new StringBuilder();
         sb.append("【").append(snapshot.location().label()).append(" 未来")
-                .append(forecastDays).append("天预报】\n");
+                .append(forecastDays).append("天天气】\n");
         if (daily == null || isEmpty(daily.time())) {
             sb.append("暂无可用的预报数据。");
             return sb.toString();
@@ -152,7 +168,7 @@ public class WeatherQueryService {
             sb.append(daily.time().get(i)).append(" | ")
                     .append(weatherAt(daily.weatherCode(), i)).append(" | ")
                     .append(formatTemperature(at(daily.temperature2mMin(), i)))
-                    .append("~")
+                    .append(" ~ ")
                     .append(formatTemperature(at(daily.temperature2mMax(), i)))
                     .append(" | 降水 ")
                     .append(formatNumber(at(daily.precipitationSum(), i)))
@@ -216,7 +232,7 @@ public class WeatherQueryService {
     }
 
     private static String formatTemperature(Double value) {
-        return value == null ? "--℃" : String.format(Locale.ROOT, "%.1f℃", value);
+        return value == null ? "--C" : String.format(Locale.ROOT, "%.1fC", value);
     }
 
     private static String formatNumber(Double value) {
@@ -299,5 +315,27 @@ public class WeatherQueryService {
 
     private static String messageOf(Exception exception) {
         return exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+    }
+
+    private static String previewText(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.length() > 200 ? text.substring(0, 200) + "..." : text;
+    }
+
+    private static String summarizeTransportContext(McpTransportContext context) {
+        if (context == null) {
+            return "{}";
+        }
+        return "{xForwardedFor=" + safeTransportValue(context, "X-Forwarded-For")
+                + ", xRealIp=" + safeTransportValue(context, "X-Real-IP")
+                + ", remoteAddr=" + safeTransportValue(context, "remoteAddr")
+                + "}";
+    }
+
+    private static String safeTransportValue(McpTransportContext context, String key) {
+        Object value = context.get(key);
+        return value == null ? "" : String.valueOf(value);
     }
 }

@@ -6,16 +6,16 @@ import com.personalblog.ragbackend.common.context.UserContext;
 import com.personalblog.ragbackend.core.chunk.ChunkingMode;
 import com.personalblog.ragbackend.knowledge.controller.request.ChatImportRequest;
 import com.personalblog.ragbackend.knowledge.controller.vo.ChatImportSummaryVO;
+import com.personalblog.ragbackend.knowledge.config.RagDocumentUploadProperties;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeBaseDO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentDO;
-import com.personalblog.ragbackend.knowledge.dto.chat.QqChatMessage;
-import com.personalblog.ragbackend.knowledge.dto.chat.QqChatTranscript;
 import com.personalblog.ragbackend.knowledge.domain.enums.DocumentStatus;
 import com.personalblog.ragbackend.knowledge.domain.enums.ProcessMode;
 import com.personalblog.ragbackend.knowledge.domain.enums.SourceType;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeBaseMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeDocumentMapper;
 import com.personalblog.ragbackend.knowledge.service.chat.ChatChunkingOptions;
+import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptInspection;
 import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptParser;
 import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptParserRegistry;
 import com.personalblog.ragbackend.knowledge.service.document.KnowledgeFileStorageService;
@@ -26,14 +26,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.time.YearMonth;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 知识对话导入服务
@@ -46,6 +44,7 @@ public class KnowledgeChatImportService {
     private final KnowledgeBaseAccessService knowledgeBaseAccessService;
     private final KnowledgeFileStorageService knowledgeFileStorageService;
     private final ChatTranscriptParserRegistry chatTranscriptParserRegistry;
+    private final RagDocumentUploadProperties uploadProperties;
     private final ObjectMapper objectMapper;
 
     public KnowledgeChatImportService(KnowledgeBaseMapper knowledgeBaseMapper,
@@ -54,6 +53,7 @@ public class KnowledgeChatImportService {
                                       KnowledgeBaseAccessService knowledgeBaseAccessService,
                                       KnowledgeFileStorageService knowledgeFileStorageService,
                                       ChatTranscriptParserRegistry chatTranscriptParserRegistry,
+                                      RagDocumentUploadProperties uploadProperties,
                                       ObjectMapper objectMapper) {
         this.knowledgeBaseMapper = knowledgeBaseMapper;
         this.knowledgeDocumentMapper = knowledgeDocumentMapper;
@@ -61,6 +61,7 @@ public class KnowledgeChatImportService {
         this.knowledgeBaseAccessService = knowledgeBaseAccessService;
         this.knowledgeFileStorageService = knowledgeFileStorageService;
         this.chatTranscriptParserRegistry = chatTranscriptParserRegistry;
+        this.uploadProperties = uploadProperties;
         this.objectMapper = objectMapper;
     }
 
@@ -80,24 +81,32 @@ public class KnowledgeChatImportService {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("chat transcript file is required");
         }
+        validateChatImportSize(file);
         if (request != null && StringUtils.hasText(request.getSplitBy()) && !"month".equalsIgnoreCase(request.getSplitBy().trim())) {
             throw new IllegalArgumentException("chat import only supports splitBy=month");
         }
 
+        String originalFileName = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : platform + "-chat.txt";
+        byte[] fileBytes = readBytes(file);
         ChatTranscriptParser parser = chatTranscriptParserRegistry.requireByPlatform(platform);
-        QqChatTranscript transcript = parser.parse(file);
-        if (transcript.messages().isEmpty()) {
+        ChatTranscriptInspection inspection = parser.inspect(fileBytes, originalFileName);
+        if (inspection.monthMessageCounts().isEmpty()) {
             throw new IllegalArgumentException("chat transcript contains no messages");
         }
 
         String fileUrl = knowledgeFileStorageService.store(
-                file,
+                fileBytes,
                 knowledgeBase.getCollectionName(),
-                StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : platform + "-chat.txt"
+                originalFileName,
+                originalFileName,
+                resolveContentType(file)
         );
-        String sourceFileHash = sha256Hex(file);
+        String sourceFileHash = sha256Hex(fileBytes);
 
-        ChatChunkingOptions options = normalizeOptions(request, transcript.messages().size());
+        int totalMessages = inspection.messageTotal() == null
+                ? inspection.monthMessageCounts().values().stream().mapToInt(Integer::intValue).sum()
+                : inspection.messageTotal();
+        ChatChunkingOptions options = normalizeOptions(request, totalMessages);
         String chunkConfig = toJson(Map.of(
                 "minMessages", options.minMessages(),
                 "maxMessages", options.maxMessages(),
@@ -107,18 +116,18 @@ public class KnowledgeChatImportService {
                 "splitGapMinutes", options.splitGapMinutes()
         ));
 
-        Set<String> months = collectMonths(transcript.messages());
+        Map<String, Integer> monthMessageCountMap = inspection.monthMessageCounts();
+        List<String> months = new ArrayList<>(monthMessageCountMap.keySet());
         List<String> createdDocIds = new ArrayList<>(months.size());
-        for (String month : months) {
-            int monthMessageCount = (int) transcript.messages().stream()
-                    .filter(message -> message.timestamp() != null && month.equals(YearMonth.from(message.timestamp()).toString()))
-                    .count();
+        for (Map.Entry<String, Integer> entry : monthMessageCountMap.entrySet()) {
+            String month = entry.getKey();
+            int monthMessageCount = entry.getValue();
             if (monthMessageCount <= 0) {
                 continue;
             }
             KnowledgeDocumentDO existing = knowledgeDocumentMapper.selectOne(new LambdaQueryWrapper<KnowledgeDocumentDO>()
                     .eq(KnowledgeDocumentDO::getKbId, knowledgeBase.getId())
-                    .eq(KnowledgeDocumentDO::getDocName, buildDocumentName(transcript, month))
+                    .eq(KnowledgeDocumentDO::getDocName, buildDocumentName(inspection, month))
                     .eq(KnowledgeDocumentDO::getDeleted, 0)
                     .last("limit 1"));
             if (existing != null) {
@@ -127,7 +136,7 @@ public class KnowledgeChatImportService {
 
             KnowledgeDocumentDO document = new KnowledgeDocumentDO();
             document.setKbId(knowledgeBase.getId());
-            document.setDocName(buildDocumentName(transcript, month));
+            document.setDocName(buildDocumentName(inspection, month));
             document.setEnabled(1);
             document.setChunkCount(0);
             document.setFileUrl(fileUrl);
@@ -136,18 +145,18 @@ public class KnowledgeChatImportService {
             document.setProcessMode(ProcessMode.CHUNK.getValue());
             document.setStatus(DocumentStatus.PENDING.getCode());
             document.setSourceType(SourceType.FILE.getValue());
-            document.setSourceFileName(transcript.sourceFileName());
+            document.setSourceFileName(inspection.sourceFileName());
             document.setChunkStrategy(ChunkingMode.CHAT_QQ_WINDOW.getValue());
             document.setChunkConfig(chunkConfig);
             document.setMetadataJson(toJson(Map.of(
-                    "docType", transcript.docType(),
-                    "chatPlatform", transcript.platform(),
-                    "groupName", transcript.groupName(),
+                    "docType", inspection.docType(),
+                    "chatPlatform", inspection.platform(),
+                    "groupName", inspection.groupName(),
                     "bucketMonth", month,
                     "sourceFileHash", sourceFileHash,
                     "sourceFileUrl", fileUrl,
                     "monthMessageCount", monthMessageCount,
-                    "sourceFile", transcript.sourceFileName()
+                    "sourceFile", inspection.sourceFileName()
             )));
             document.setCreatedBy(parseUserId(UserContext.getUserId()));
             document.setUpdatedBy(parseUserId(UserContext.getUserId()));
@@ -167,26 +176,12 @@ public class KnowledgeChatImportService {
         }
 
         return new ChatImportSummaryVO(
-                transcript.groupName(),
+                inspection.groupName(),
                 fileUrl,
                 createdDocIds.size(),
                 List.copyOf(createdDocIds),
                 List.copyOf(months)
         );
-    }
-
-    private Set<String> collectMonths(List<QqChatMessage> messages) {
-        LinkedHashSet<String> months = new LinkedHashSet<>();
-        if (messages == null) {
-            return months;
-        }
-        for (QqChatMessage message : messages) {
-            if (message == null || message.timestamp() == null) {
-                continue;
-            }
-            months.add(YearMonth.from(message.timestamp()).toString());
-        }
-        return months;
     }
 
     private ChatChunkingOptions normalizeOptions(ChatImportRequest request, int totalMessages) {
@@ -208,13 +203,13 @@ public class KnowledgeChatImportService {
         return value == null ? defaultValue : value;
     }
 
-    private String buildDocumentName(QqChatTranscript transcript, String month) {
-        String fallback = StringUtils.hasText(transcript.platform()) ? transcript.platform().trim() + "-chat" : "chat";
-        String normalizedGroupName = StringUtils.hasText(transcript.groupName()) ? transcript.groupName().trim() : fallback;
-        if ("qq".equalsIgnoreCase(transcript.platform())) {
+    private String buildDocumentName(ChatTranscriptInspection inspection, String month) {
+        String fallback = StringUtils.hasText(inspection.platform()) ? inspection.platform().trim() + "-chat" : "chat";
+        String normalizedGroupName = StringUtils.hasText(inspection.groupName()) ? inspection.groupName().trim() : fallback;
+        if ("qq".equalsIgnoreCase(inspection.platform())) {
             return normalizedGroupName + "#" + month;
         }
-        return normalizedGroupName + "#" + month + "@" + transcript.platform();
+        return normalizedGroupName + "#" + month + "@" + inspection.platform();
     }
 
     private KnowledgeBaseDO requireKnowledgeBase(Long kbId) {
@@ -243,9 +238,23 @@ public class KnowledgeChatImportService {
         }
     }
 
-    private String sha256Hex(MultipartFile file) {
+    private byte[] readBytes(MultipartFile file) {
         try {
-            byte[] bytes = file.getBytes();
+            return file.getBytes();
+        } catch (IOException exception) {
+            throw new IllegalStateException("failed to read chat transcript file", exception);
+        }
+    }
+
+    private void validateChatImportSize(MultipartFile file) {
+        long maxBytes = Math.max(1, uploadProperties.getMaxChatImportSizeMb()) * 1024L * 1024L;
+        if (file.getSize() > maxBytes) {
+            throw new IllegalArgumentException("chat transcript file too large, maxSizeMb=" + uploadProperties.getMaxChatImportSizeMb());
+        }
+    }
+
+    private String sha256Hex(byte[] bytes) {
+        try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(bytes);
             StringBuilder builder = new StringBuilder(hash.length * 2);
@@ -260,6 +269,13 @@ public class KnowledgeChatImportService {
         } catch (Exception exception) {
             throw new IllegalStateException("failed to hash chat transcript file", exception);
         }
+    }
+
+    private String resolveContentType(MultipartFile file) {
+        if (file != null && StringUtils.hasText(file.getContentType())) {
+            return file.getContentType();
+        }
+        return "text/plain";
     }
 
     private String toJson(Map<String, Object> value) {

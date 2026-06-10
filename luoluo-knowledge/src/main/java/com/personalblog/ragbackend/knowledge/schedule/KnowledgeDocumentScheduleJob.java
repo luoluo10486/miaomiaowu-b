@@ -10,10 +10,12 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class KnowledgeDocumentScheduleJob {
+    private final RunningDocumentRecoveryProcessor runningDocumentRecoveryProcessor;
     private final ScheduleRefreshProcessor scheduleRefreshProcessor;
 
     @Scheduled(fixedDelayString = "${rag.knowledge.schedule.scan-delay-ms:10000}")
     public void refresh() {
+        runningDocumentRecoveryProcessor.recover();
         scheduleRefreshProcessor.refresh();
     }
 }

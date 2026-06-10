@@ -1,5 +1,6 @@
 package com.personalblog.ragbackend.knowledge.filter;
 
+import com.personalblog.ragbackend.common.context.UserContext;
 import com.personalblog.ragbackend.knowledge.config.RagSemaphoreProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -13,6 +14,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -28,7 +30,9 @@ import java.util.concurrent.TimeUnit;
 public class UploadRateLimitFilter extends OncePerRequestFilter {
 
     private static final String UPLOAD_PATH_PATTERN = "/knowledge-base/";
-    private static final String UPLOAD_PATH_SUFFIX = "/docs/upload";
+    private static final String DOC_UPLOAD_SUFFIX = "/docs/upload";
+    private static final String QQ_CHAT_IMPORT_SUFFIX = "/chat-import/qq";
+    private static final String WECHAT_CHAT_IMPORT_SUFFIX = "/chat-import/wechat";
 
     private final RedissonClient redissonClient;
     private final RagSemaphoreProperties semaphoreProperties;
@@ -42,8 +46,15 @@ public class UploadRateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        RagSemaphoreProperties.PermitExpirableConfig config = semaphoreProperties.getDocumentUpload();
-        RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(config.getName());
+        RagSemaphoreProperties.PermitExpirableConfig config = resolveConfig(request);
+        if (config == null) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        String semaphoreName = resolveSemaphoreName(request, config);
+        RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(semaphoreName);
+        semaphore.trySetPermits(config.getMaxConcurrent());
 
         String permitId = null;
         try {
@@ -81,6 +92,70 @@ public class UploadRateLimitFilter extends OncePerRequestFilter {
             return false;
         }
         String uri = request.getRequestURI();
-        return uri != null && uri.contains(UPLOAD_PATH_PATTERN) && uri.endsWith(UPLOAD_PATH_SUFFIX);
+        return uri != null
+                && uri.contains(UPLOAD_PATH_PATTERN)
+                && (uri.endsWith(DOC_UPLOAD_SUFFIX)
+                || uri.endsWith(QQ_CHAT_IMPORT_SUFFIX)
+                || uri.endsWith(WECHAT_CHAT_IMPORT_SUFFIX));
+    }
+
+    private RagSemaphoreProperties.PermitExpirableConfig resolveConfig(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (uri == null) {
+            return null;
+        }
+        if (uri.endsWith(DOC_UPLOAD_SUFFIX)) {
+            return semaphoreProperties.getDocumentUpload();
+        }
+        if (uri.endsWith(QQ_CHAT_IMPORT_SUFFIX)) {
+            return semaphoreProperties.getChatImportQq();
+        }
+        if (uri.endsWith(WECHAT_CHAT_IMPORT_SUFFIX)) {
+            return semaphoreProperties.getChatImportWechat();
+        }
+        return null;
+    }
+
+    private String resolveSemaphoreName(HttpServletRequest request, RagSemaphoreProperties.PermitExpirableConfig config) {
+        String uri = request.getRequestURI();
+        String endpointKey = resolveEndpointKey(uri);
+        String kbId = resolvePathSegment(uri, "knowledge-base");
+        String userId = UserContext.getUserId();
+        if (!org.springframework.util.StringUtils.hasText(userId)) {
+            userId = StringUtils.hasText(UserContext.getUsername()) ? UserContext.getUsername() : "anonymous";
+        }
+        return config.getName() + ":" + endpointKey + ":" + kbId + ":" + userId;
+    }
+
+    private String resolveEndpointKey(String uri) {
+        if (uri == null) {
+            return "upload";
+        }
+        if (uri.endsWith(DOC_UPLOAD_SUFFIX)) {
+            return "doc";
+        }
+        if (uri.endsWith(QQ_CHAT_IMPORT_SUFFIX)) {
+            return "qq";
+        }
+        if (uri.endsWith(WECHAT_CHAT_IMPORT_SUFFIX)) {
+            return "wechat";
+        }
+        return "upload";
+    }
+
+    private String resolvePathSegment(String uri, String marker) {
+        if (uri == null || !org.springframework.util.StringUtils.hasText(marker)) {
+            return "unknown";
+        }
+        String[] segments = uri.split("/");
+        for (int index = 0; index < segments.length - 1; index++) {
+            if (marker.equalsIgnoreCase(segments[index])) {
+                String candidate = segments[index + 1];
+                if (org.springframework.util.StringUtils.hasText(candidate)) {
+                    return candidate.trim();
+                }
+            }
+        }
+        return "unknown";
     }
 }

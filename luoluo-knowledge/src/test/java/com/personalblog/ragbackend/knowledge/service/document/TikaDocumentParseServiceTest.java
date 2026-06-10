@@ -1,5 +1,6 @@
 package com.personalblog.ragbackend.knowledge.service.document;
 
+import com.personalblog.ragbackend.knowledge.config.RagDocumentUploadProperties;
 import com.personalblog.ragbackend.knowledge.dto.document.ParseResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -10,11 +11,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tika文档解析服务Test类
+ * Tika 文档解析服务测试
  */
 class TikaDocumentParseServiceTest {
 
-    private final TikaDocumentParseService tikaDocumentParseService = new TikaDocumentParseService();
+    private final TikaDocumentParseService tikaDocumentParseService = new TikaDocumentParseService(createProps());
 
     @Test
     void parseFileShouldExtractPlainTextContent() {
@@ -50,5 +51,11 @@ class TikaDocumentParseServiceTest {
         assertFalse(result.success());
         assertEquals(0, result.contentLength());
         assertEquals("文件为空", result.errorMessage());
+    }
+
+    private RagDocumentUploadProperties createProps() {
+        RagDocumentUploadProperties properties = new RagDocumentUploadProperties();
+        properties.setMaxParseTextChars(1024);
+        return properties;
     }
 }

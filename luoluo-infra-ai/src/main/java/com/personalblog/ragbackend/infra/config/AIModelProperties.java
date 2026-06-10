@@ -297,6 +297,12 @@ public class AIModelProperties {
         @Min(1000)
         private Long openDurationMs = 30000L;
 
+        /**
+         * Whether local providers such as Ollama can be used as implicit fallback candidates
+         * when the preferred model is remote.
+         */
+        private Boolean allowLocalFallback = false;
+
         public Integer getFailureThreshold() {
             return failureThreshold;
         }
@@ -311,6 +317,14 @@ public class AIModelProperties {
 
         public void setOpenDurationMs(Long openDurationMs) {
             this.openDurationMs = openDurationMs;
+        }
+
+        public Boolean getAllowLocalFallback() {
+            return allowLocalFallback;
+        }
+
+        public void setAllowLocalFallback(Boolean allowLocalFallback) {
+            this.allowLocalFallback = allowLocalFallback;
         }
     }
 

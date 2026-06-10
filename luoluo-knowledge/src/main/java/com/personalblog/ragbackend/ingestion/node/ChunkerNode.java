@@ -14,9 +14,11 @@ import com.personalblog.ragbackend.core.chunk.ChunkingStrategyFactory;
 import com.personalblog.ragbackend.core.chunk.TextChunkingOptions;
 import com.personalblog.ragbackend.knowledge.dto.document.DocumentChunk;
 import com.personalblog.ragbackend.infra.embedding.EmbeddingService;
+import com.personalblog.ragbackend.knowledge.config.RagKnowledgeProcessingProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,13 +33,16 @@ public class ChunkerNode implements IngestionNode {
     private final ObjectMapper objectMapper;
     private final ChunkingStrategyFactory chunkingStrategyFactory;
     private final EmbeddingService embeddingService;
+    private final RagKnowledgeProcessingProperties processingProperties;
 
     public ChunkerNode(ObjectMapper objectMapper,
                        ChunkingStrategyFactory chunkingStrategyFactory,
-                       EmbeddingService embeddingService) {
+                       EmbeddingService embeddingService,
+                       RagKnowledgeProcessingProperties processingProperties) {
         this.objectMapper = objectMapper;
         this.chunkingStrategyFactory = chunkingStrategyFactory;
         this.embeddingService = embeddingService;
+        this.processingProperties = processingProperties;
     }
 
     @Override
@@ -76,14 +81,23 @@ public class ChunkerNode implements IngestionNode {
                         .build())
                 .collect(Collectors.toList());
         long embedStart = System.currentTimeMillis();
-        List<List<Float>> embeddings = embeddingService.embedBatch(vectorChunks.stream().map(VectorChunk::getContent).toList());
+        int batchSize = Math.max(1, processingProperties.getEmbeddingBatchSize());
+        for (int start = 0; start < vectorChunks.size(); start += batchSize) {
+            int end = Math.min(vectorChunks.size(), start + batchSize);
+            List<VectorChunk> batch = vectorChunks.subList(start, end);
+            List<String> contents = new ArrayList<>(batch.size());
+            for (VectorChunk chunk : batch) {
+                contents.add(chunk.getContent());
+            }
+            List<List<Float>> embeddings = embeddingService.embedBatch(contents);
+            if (embeddings == null || embeddings.size() != batch.size()) {
+                return NodeResult.fail(new ClientException("embedding result size mismatch"));
+            }
+            for (int i = 0; i < batch.size(); i++) {
+                batch.get(i).setEmbedding(toArray(embeddings.get(i)));
+            }
+        }
         long embedDurationMs = System.currentTimeMillis() - embedStart;
-        if (embeddings == null || embeddings.size() != vectorChunks.size()) {
-            return NodeResult.fail(new ClientException("embedding result size mismatch"));
-        }
-        for (int i = 0; i < vectorChunks.size(); i++) {
-            vectorChunks.get(i).setEmbedding(toArray(embeddings.get(i)));
-        }
         context.setChunks(vectorChunks);
         Map<String, Object> metadata = new HashMap<>(context.getMetadata() == null ? Map.of() : context.getMetadata());
         context.setMetadata(metadata);

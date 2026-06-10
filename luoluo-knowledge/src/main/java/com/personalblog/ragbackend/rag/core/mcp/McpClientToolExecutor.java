@@ -35,8 +35,13 @@ public class McpClientToolExecutor implements McpToolExecutor {
         try {
             Map<String, Object> args = parameters == null ? Map.of() : parameters;
             CallToolResult result = mcpClient.callTool(new CallToolRequest(toolDefinition.name(), args));
-            log.info("remote MCP tool call complete, toolId={}, params={}, contentSize={}, elapsed={}ms",
-                    toolDefinition.name(), args, result.content() == null ? 0 : result.content().size(), System.currentTimeMillis() - startMs);
+            log.info("remote MCP tool call complete, toolId={}, params={}, isError={}, contentSize={}, preview={}, elapsed={}ms",
+                    toolDefinition.name(),
+                    args,
+                    result == null ? null : result.isError(),
+                    result == null || result.content() == null ? 0 : result.content().size(),
+                    extractPreview(result),
+                    System.currentTimeMillis() - startMs);
             return result;
         } catch (Exception exception) {
             String reason = exception.getMessage() != null ? exception.getMessage() : exception.getClass().getSimpleName();
@@ -46,5 +51,18 @@ public class McpClientToolExecutor implements McpToolExecutor {
                     .isError(true)
                     .build();
         }
+    }
+
+    private String extractPreview(CallToolResult result) {
+        if (result == null || result.content() == null || result.content().isEmpty()) {
+            return "";
+        }
+        return result.content().stream()
+                .filter(TextContent.class::isInstance)
+                .map(TextContent.class::cast)
+                .map(TextContent::text)
+                .findFirst()
+                .map(text -> text.length() > 120 ? text.substring(0, 120) + "..." : text)
+                .orElse("");
     }
 }

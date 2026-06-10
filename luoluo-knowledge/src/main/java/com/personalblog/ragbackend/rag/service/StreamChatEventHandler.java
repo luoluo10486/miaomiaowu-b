@@ -79,7 +79,7 @@ public class StreamChatEventHandler implements StreamCallback {
         if (taskManager.isCancelled(taskId) || StrUtil.isBlank(content)) {
             return;
         }
-        String sanitized = MarkdownContentSanitizer.stripImages(content);
+        String sanitized = MarkdownContentSanitizer.stripImagesAndToolCallArtifacts(content);
         if (StrUtil.isBlank(sanitized)) {
             return;
         }
@@ -95,7 +95,7 @@ public class StreamChatEventHandler implements StreamCallback {
         if (taskManager.isCancelled(taskId) || StrUtil.isBlank(content)) {
             return;
         }
-        String sanitized = MarkdownContentSanitizer.stripImages(content);
+        String sanitized = MarkdownContentSanitizer.stripImagesAndToolCallArtifacts(content);
         if (StrUtil.isBlank(sanitized)) {
             return;
         }

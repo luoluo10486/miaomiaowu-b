@@ -311,10 +311,12 @@ public class IntentNode {
         return children == null || children.isEmpty();
     }
 
+    @JsonIgnore
     public boolean isKB() {
         return kind == null || kind == IntentKind.KB.getCode();
     }
 
+    @JsonIgnore
     public boolean isKb() {
         return isKB();
     }

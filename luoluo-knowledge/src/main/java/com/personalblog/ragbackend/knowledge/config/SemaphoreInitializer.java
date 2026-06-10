@@ -20,11 +20,19 @@ public class SemaphoreInitializer {
 
     @PostConstruct
     public void documentUploadSemaphoreInitialize() {
-        RagSemaphoreProperties.PermitExpirableConfig config = semaphoreProperties.getDocumentUpload();
-        RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(config.getName());
+        initialize("document upload", semaphoreProperties.getDocumentUpload());
+        initialize("qq chat import", semaphoreProperties.getChatImportQq());
+        initialize("wechat chat import", semaphoreProperties.getChatImportWechat());
+    }
 
+    private void initialize(String label, RagSemaphoreProperties.PermitExpirableConfig config) {
+        if (config == null) {
+            return;
+        }
+        RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(config.getName());
         semaphore.setPermits(config.getMaxConcurrent());
-        log.info("Initialized document upload semaphore: name={}, maxConcurrent={}",
+        log.info("Initialized {} semaphore: name={}, maxConcurrent={}",
+                label,
                 config.getName(),
                 config.getMaxConcurrent());
     }

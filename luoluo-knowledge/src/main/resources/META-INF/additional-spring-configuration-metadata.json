@@ -3,6 +3,37 @@
     {
       "name": "rag.vector.type",
       "type": "java.lang.String",
-      "description": "Description for rag.vector.type."
-  }
-] }
+      "description": "Vector store backend type."
+    },
+    {
+      "name": "rag.knowledge.processing.embedding-batch-size",
+      "type": "java.lang.Integer",
+      "defaultValue": 8,
+      "description": "Batch size for normal document embedding requests."
+    },
+    {
+      "name": "rag.knowledge.processing.chat-embedding-batch-size",
+      "type": "java.lang.Integer",
+      "defaultValue": 4,
+      "description": "Batch size for chat transcript embedding requests."
+    },
+    {
+      "name": "rag.knowledge.processing.vector-write-batch-size",
+      "type": "java.lang.Integer",
+      "defaultValue": 10,
+      "description": "Batch size for pgvector JDBC writes."
+    },
+    {
+      "name": "rag.knowledge.processing.chat-transcript-cache-max-entries",
+      "type": "java.lang.Integer",
+      "defaultValue": 2,
+      "description": "Maximum number of parsed chat transcript cache entries kept in memory."
+    },
+    {
+      "name": "rag.knowledge.processing.chat-transcript-cache-ttl-seconds",
+      "type": "java.lang.Integer",
+      "defaultValue": 900,
+      "description": "TTL in seconds for parsed chat transcript cache entries."
+    }
+  ]
+}

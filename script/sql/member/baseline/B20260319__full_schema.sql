@@ -5,7 +5,7 @@
     phone           varchar(32),
     email           varchar(128),
     display_name    varchar(64),
-    user_type       varchar(16) not null default 'USER',
+    user_type       varchar(128) not null default 'user',
     status          varchar(16) not null default 'ACTIVE',
     deleted         smallint not null default 0,
     created_at      timestamp not null default current_timestamp,

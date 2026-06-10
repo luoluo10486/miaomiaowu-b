@@ -4,9 +4,7 @@ import com.personalblog.ragbackend.knowledge.dto.chat.QqChatMessage;
 import com.personalblog.ragbackend.knowledge.dto.chat.QqChatTranscript;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -52,29 +50,29 @@ public class WechatChatTranscriptParser implements ChatTranscriptParser {
     }
 
     @Override
-    public QqChatTranscript parse(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("chat transcript file is required");
-        }
-        try {
-            String fileName = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "wechat-chat.txt";
-            return parse(file.getBytes(), fileName);
-        } catch (IOException exception) {
-            throw new IllegalStateException("failed to read chat transcript file", exception);
-        }
+    public ChatTranscriptInspection inspect(byte[] bytes, String fileName) {
+        String[] lines = normalizedLines(bytes);
+        ScanResult result = scanTranscript(lines, fileName, false);
+        return result.inspection();
     }
 
+    @Override
     public QqChatTranscript parse(byte[] bytes, String fileName) {
         if (bytes == null || bytes.length == 0) {
             throw new IllegalArgumentException("chat transcript bytes are required");
         }
+        String[] lines = normalizedLines(bytes);
+        return scanTranscript(lines, fileName, true).transcript();
+    }
 
-        String content = decode(bytes);
-        String normalized = content.replace("\r\n", "\n").replace('\r', '\n');
-        String[] lines = normalized.split("\n", -1);
-
+    private ScanResult scanTranscript(String[] lines, String fileName, boolean captureMessages) {
         Map<String, String> header = new LinkedHashMap<>();
-        List<QqChatMessage> messages = new ArrayList<>();
+        List<QqChatMessage> messages = captureMessages ? new ArrayList<>() : List.of();
+        Map<String, Integer> monthMessageCounts = new LinkedHashMap<>();
+        LocalDateTime firstTimestamp = null;
+        LocalDateTime lastTimestamp = null;
+        int messageCount = 0;
+
         int index = 0;
         while (index < lines.length) {
             String trimmed = lines[index].trim();
@@ -97,31 +95,51 @@ public class WechatChatTranscriptParser implements ChatTranscriptParser {
             }
 
             int cursor = index + 1;
-            List<String> contentLines = new ArrayList<>();
-            contentLines.add(headerMatch.content());
             int lastContentLine = index;
+            List<String> contentLines = null;
+            if (captureMessages) {
+                contentLines = new ArrayList<>();
+                contentLines.add(headerMatch.content());
+            }
             while (cursor < lines.length && matchMessageHeader(lines[cursor]) == null) {
-                contentLines.add(lines[cursor]);
+                if (captureMessages) {
+                    contentLines.add(lines[cursor]);
+                }
                 if (StringUtils.hasText(lines[cursor])) {
                     lastContentLine = cursor;
                 }
                 cursor++;
             }
 
-            messages.add(new QqChatMessage(
-                    headerMatch.speakerTag(),
-                    headerMatch.speakerName(),
-                    headerMatch.timestamp(),
-                    normalizeMessageContent(contentLines),
-                    messages.size() + 1,
-                    index + 1,
-                    lastContentLine + 1
-            ));
+            messageCount++;
+            String month = java.time.YearMonth.from(headerMatch.timestamp()).toString();
+            monthMessageCounts.merge(month, 1, Integer::sum);
+            if (firstTimestamp == null || headerMatch.timestamp().isBefore(firstTimestamp)) {
+                firstTimestamp = headerMatch.timestamp();
+            }
+            if (lastTimestamp == null || headerMatch.timestamp().isAfter(lastTimestamp)) {
+                lastTimestamp = headerMatch.timestamp();
+            }
+
+            if (captureMessages) {
+                messages.add(new QqChatMessage(
+                        headerMatch.speakerTag(),
+                        headerMatch.speakerName(),
+                        headerMatch.timestamp(),
+                        normalizeMessageContent(contentLines),
+                        messageCount,
+                        index + 1,
+                        lastContentLine + 1
+                ));
+            }
             index = cursor;
         }
 
         LocalDateTime exportedAt = parseDateTime(header.get("exportedAt"));
         Integer messageTotal = parseInteger(header.get("messageTotal"));
+        if (messageTotal == null) {
+            messageTotal = messageCount;
+        }
         LocalDateTime rangeStart = null;
         LocalDateTime rangeEnd = null;
         if (StringUtils.hasText(header.get("range")) && header.get("range").contains(" - ")) {
@@ -129,8 +147,14 @@ public class WechatChatTranscriptParser implements ChatTranscriptParser {
             rangeStart = rangeParts.length > 0 ? parseDateTime(rangeParts[0]) : null;
             rangeEnd = rangeParts.length > 1 ? parseDateTime(rangeParts[1]) : null;
         }
+        if (rangeStart == null) {
+            rangeStart = firstTimestamp;
+        }
+        if (rangeEnd == null) {
+            rangeEnd = lastTimestamp;
+        }
 
-        return new QqChatTranscript(
+        QqChatTranscript transcript = new QqChatTranscript(
                 fileName,
                 PLATFORM,
                 DOC_TYPE,
@@ -142,6 +166,19 @@ public class WechatChatTranscriptParser implements ChatTranscriptParser {
                 rangeEnd,
                 messages
         );
+        ChatTranscriptInspection inspection = new ChatTranscriptInspection(
+                fileName,
+                PLATFORM,
+                DOC_TYPE,
+                header.getOrDefault("groupName", ""),
+                header.getOrDefault("chatType", ""),
+                exportedAt,
+                messageTotal,
+                rangeStart,
+                rangeEnd,
+                monthMessageCounts
+        );
+        return new ScanResult(transcript, inspection);
     }
 
     private MessageHeader matchMessageHeader(String line) {
@@ -218,6 +255,15 @@ public class WechatChatTranscriptParser implements ChatTranscriptParser {
                 && bytes[2] == (byte) 0xBF;
     }
 
+    private String[] normalizedLines(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            throw new IllegalArgumentException("chat transcript bytes are required");
+        }
+        String content = decode(bytes);
+        String normalized = content.replace("\r\n", "\n").replace('\r', '\n');
+        return normalized.split("\n", -1);
+    }
+
     private Integer parseInteger(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
@@ -253,5 +299,8 @@ public class WechatChatTranscriptParser implements ChatTranscriptParser {
     }
 
     private record MessageHeader(String speakerTag, String speakerName, LocalDateTime timestamp, String content) {
+    }
+
+    private record ScanResult(QqChatTranscript transcript, ChatTranscriptInspection inspection) {
     }
 }

@@ -8,8 +8,8 @@ spring:
     name: ragent${unique-name:}-service
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 100MB
+      max-file-size: 20MB
+      max-request-size: 30MB
   sql:
     init:
       mode: never
@@ -21,10 +21,10 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-timeout: 5000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      maximum-pool-size: 10
-      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      maximum-pool-size: 4
+      minimum-idle: 1
       pool-name: RagentHikariPool
   mail:
     host: smtp.qq.com
@@ -97,6 +97,7 @@ ai:
   selection:
     failure-threshold: 2
     open-duration-ms: 30000
+    allow-local-fallback: ${AI_ALLOW_LOCAL_FALLBACK:false}
   stream:
     message-chunk-size: 1
   chat:
@@ -121,8 +122,10 @@ ai:
         provider: ollama
         model: qwen3:8b-fp16
         priority: 2
+        enabled: ${AI_OLLAMA_CHAT_ENABLED:false}
   embedding:
     default-model: qwen-emb-8b
+    max-concurrent: 1
     candidates:
       - id: qwen-emb-8b
         provider: siliconflow
@@ -134,6 +137,7 @@ ai:
         model: qwen3-embedding:8b-fp16
         dimension: ${rag.default.dimension}
         priority: 2
+        enabled: ${AI_OLLAMA_EMBEDDING_ENABLED:false}
   rerank:
     default-model: qwen3-rerank
     candidates:
@@ -172,15 +176,38 @@ rag:
   semaphore:
     document-upload:
       name: rag:document:upload
-      max-concurrent: 10
-      max-wait-seconds: 5
-      lease-seconds: 300
+      max-concurrent: 1
+      max-wait-seconds: 2
+      lease-seconds: 900
+    chat-import-qq:
+      name: rag:chat-import:qq
+      max-concurrent: 1
+      max-wait-seconds: 2
+      lease-seconds: 900
+    chat-import-wechat:
+      name: rag:chat-import:wechat
+      max-concurrent: 1
+      max-wait-seconds: 2
+      lease-seconds: 900
   knowledge:
+    processing:
+      embedding-batch-size: 4
+      chat-embedding-batch-size: 2
+      vector-write-batch-size: 5
+      chat-transcript-cache-max-entries: 1
+      chat-transcript-cache-ttl-seconds: 300
     schedule:
       scan-delay-ms: 10000
       lock-seconds: 900
       batch-size: 20
       min-interval-seconds: 60
+  upload:
+    max-document-upload-size-mb: 20
+    max-remote-download-size-mb: 20
+    max-pipeline-upload-size-mb: 10
+    max-chat-import-size-mb: 10
+    max-parse-text-chars: 2000000
+    min-temp-free-space-mb: 256
   mcp:
     servers:
       - name: default

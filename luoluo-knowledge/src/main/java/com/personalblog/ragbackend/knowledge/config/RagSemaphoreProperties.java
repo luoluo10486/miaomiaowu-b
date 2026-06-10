@@ -20,6 +20,12 @@ public class RagSemaphoreProperties {
     @Valid
     private PermitExpirableConfig documentUpload = new PermitExpirableConfig();
 
+    @Valid
+    private PermitExpirableConfig chatImportQq = new PermitExpirableConfig();
+
+    @Valid
+    private PermitExpirableConfig chatImportWechat = new PermitExpirableConfig();
+
     @Data
     public static class PermitExpirableConfig {
 
@@ -33,18 +39,18 @@ public class RagSemaphoreProperties {
          * 最大并发数
          */
         @Min(1)
-        private Integer maxConcurrent = 10;
+        private Integer maxConcurrent = 1;
 
         /**
          * 获取许可最大等待时间（秒）
          */
         @Min(0)
-        private Integer maxWaitSeconds = 30;
+        private Integer maxWaitSeconds = 2;
 
         /**
          * permit 自动释放时间（秒）
          */
         @Min(1)
-        private Integer leaseSeconds = 30;
+        private Integer leaseSeconds = 900;
     }
 }

@@ -35,6 +35,16 @@ public class ChatTranscriptChunkService {
                 .filter(message -> message != null && message.timestamp() != null)
                 .filter(message -> YearMonth.from(message.timestamp()).equals(month))
                 .toList();
+        return chunkTranscript(transcript, bucketMonth, monthlyMessages, options);
+    }
+
+    public List<DocumentChunk> chunkTranscript(QqChatTranscript transcript,
+                                               String bucketMonth,
+                                               List<QqChatMessage> monthlyMessages,
+                                               ChatChunkingOptions options) {
+        if (transcript == null || monthlyMessages == null || monthlyMessages.isEmpty() || !StringUtils.hasText(bucketMonth)) {
+            return List.of();
+        }
         if (monthlyMessages.isEmpty()) {
             return List.of();
         }
@@ -127,8 +137,29 @@ public class ChatTranscriptChunkService {
 
     private String formatMessage(QqChatMessage message) {
         String content = message.content() == null ? "" : message.content().replace("\r\n", "\n").replace('\r', '\n');
-        content = content.replace('\n', ' ').replaceAll("\\s+", " ").trim();
+        content = collapseWhitespace(content);
         return "[" + formatDateTime(message.timestamp()) + "] " + message.speakerName() + ": " + content;
+    }
+
+    private String collapseWhitespace(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder(value.length());
+        boolean previousWhitespace = false;
+        for (int i = 0; i < value.length(); i++) {
+            char current = value.charAt(i);
+            if (Character.isWhitespace(current)) {
+                if (!previousWhitespace) {
+                    builder.append(' ');
+                    previousWhitespace = true;
+                }
+                continue;
+            }
+            builder.append(current);
+            previousWhitespace = false;
+        }
+        return builder.toString().trim();
     }
 
     private long gapMinutes(LocalDateTime previous, LocalDateTime current) {

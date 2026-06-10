@@ -4,9 +4,7 @@ import com.personalblog.ragbackend.knowledge.dto.chat.QqChatMessage;
 import com.personalblog.ragbackend.knowledge.dto.chat.QqChatTranscript;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -52,29 +50,28 @@ public class QqChatTranscriptParser implements ChatTranscriptParser {
     }
 
     @Override
-    public QqChatTranscript parse(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("chat transcript file is required");
-        }
-        try {
-            String fileName = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "qq-chat.txt";
-            return parse(file.getBytes(), fileName);
-        } catch (IOException exception) {
-            throw new IllegalStateException("failed to read chat transcript file", exception);
-        }
+    public ChatTranscriptInspection inspect(byte[] bytes, String fileName) {
+        String[] lines = normalizedLines(bytes);
+        ScanResult result = scanTranscript(lines, fileName, false);
+        return result.inspection();
     }
 
+    @Override
     public QqChatTranscript parse(byte[] bytes, String fileName) {
         if (bytes == null || bytes.length == 0) {
             throw new IllegalArgumentException("chat transcript bytes are required");
         }
+        String[] lines = normalizedLines(bytes);
+        return scanTranscript(lines, fileName, true).transcript();
+    }
 
-        String content = decode(bytes);
-        String normalized = content.replace("\r\n", "\n").replace('\r', '\n');
-        String[] lines = normalized.split("\n", -1);
-
+    private ScanResult scanTranscript(String[] lines, String fileName, boolean captureMessages) {
         Map<String, String> header = new LinkedHashMap<>();
-        List<QqChatMessage> messages = new ArrayList<>();
+        List<QqChatMessage> messages = captureMessages ? new ArrayList<>() : List.of();
+        Map<String, Integer> monthMessageCounts = new LinkedHashMap<>();
+        LocalDateTime firstTimestamp = null;
+        LocalDateTime lastTimestamp = null;
+        int messageCount = 0;
 
         int index = 0;
         while (index < lines.length) {
@@ -91,13 +88,27 @@ public class QqChatTranscriptParser implements ChatTranscriptParser {
                 header.put("range", trimmed.substring(HEADER_RANGE.length()).trim());
             }
 
-            if (isMessageHeader(lines, index)) {
-                MessageParseResult result = parseMessage(lines, index, messages.size() + 1);
-                messages.add(result.message());
-                index = result.nextIndex();
+            if (!isMessageHeader(lines, index)) {
+                index++;
                 continue;
             }
-            index++;
+
+            MessageParseResult result = parseMessage(lines, index, messageCount + 1, captureMessages);
+            messageCount++;
+            if (result.timestamp() != null) {
+                String month = java.time.YearMonth.from(result.timestamp()).toString();
+                monthMessageCounts.merge(month, 1, Integer::sum);
+                if (firstTimestamp == null || result.timestamp().isBefore(firstTimestamp)) {
+                    firstTimestamp = result.timestamp();
+                }
+                if (lastTimestamp == null || result.timestamp().isAfter(lastTimestamp)) {
+                    lastTimestamp = result.timestamp();
+                }
+            }
+            if (captureMessages && result.message() != null) {
+                messages.add(result.message());
+            }
+            index = result.nextIndex();
         }
 
         LocalDateTime exportedAt = parseDateTime(header.get("exportedAt"));
@@ -108,17 +119,19 @@ public class QqChatTranscriptParser implements ChatTranscriptParser {
             rangeStart = range.length > 0 ? parseDateTime(range[0]) : null;
             rangeEnd = range.length > 1 ? parseDateTime(range[1]) : null;
         }
-
-        Integer messageTotal = null;
-        if (StringUtils.hasText(header.get("messageTotal"))) {
-            try {
-                messageTotal = Integer.parseInt(header.get("messageTotal"));
-            } catch (NumberFormatException ignored) {
-                messageTotal = null;
-            }
+        if (rangeStart == null) {
+            rangeStart = firstTimestamp;
+        }
+        if (rangeEnd == null) {
+            rangeEnd = lastTimestamp;
         }
 
-        return new QqChatTranscript(
+        Integer messageTotal = parseInteger(header.get("messageTotal"));
+        if (messageTotal == null) {
+            messageTotal = messageCount;
+        }
+
+        QqChatTranscript transcript = new QqChatTranscript(
                 fileName,
                 PLATFORM,
                 DOC_TYPE,
@@ -130,9 +143,22 @@ public class QqChatTranscriptParser implements ChatTranscriptParser {
                 rangeEnd,
                 messages
         );
+        ChatTranscriptInspection inspection = new ChatTranscriptInspection(
+                fileName,
+                PLATFORM,
+                DOC_TYPE,
+                header.getOrDefault("groupName", ""),
+                header.getOrDefault("chatType", ""),
+                exportedAt,
+                messageTotal,
+                rangeStart,
+                rangeEnd,
+                monthMessageCounts
+        );
+        return new ScanResult(transcript, inspection);
     }
 
-    private MessageParseResult parseMessage(String[] lines, int startIndex, int messageIndex) {
+    private MessageParseResult parseMessage(String[] lines, int startIndex, int messageIndex, boolean captureMessage) {
         Matcher matcher = HEADER_PATTERN.matcher(lines[startIndex].trim());
         if (!matcher.matches()) {
             throw new IllegalArgumentException("chat transcript message header is invalid at line " + (startIndex + 1));
@@ -157,10 +183,24 @@ public class QqChatTranscriptParser implements ChatTranscriptParser {
             throw new IllegalArgumentException("chat transcript message content line is invalid at line " + (startIndex + 1));
         }
 
+        int lastContentLine = cursor;
         String firstContentLine = lines[cursor].trim().substring(HEADER_CONTENT.length()).trim();
+        if (!captureMessage) {
+            cursor++;
+            while (cursor < lines.length) {
+                if (isMessageHeader(lines, cursor)) {
+                    break;
+                }
+                if (StringUtils.hasText(lines[cursor])) {
+                    lastContentLine = cursor;
+                }
+                cursor++;
+            }
+            return new MessageParseResult(null, cursor, timestamp);
+        }
+
         List<String> contentLines = new ArrayList<>();
         contentLines.add(firstContentLine);
-        int lastContentLine = cursor;
         cursor++;
         while (cursor < lines.length) {
             if (isMessageHeader(lines, cursor)) {
@@ -172,7 +212,6 @@ public class QqChatTranscriptParser implements ChatTranscriptParser {
             }
             cursor++;
         }
-
         String content = normalizeMessageContent(contentLines);
         return new MessageParseResult(
                 new QqChatMessage(
@@ -184,7 +223,8 @@ public class QqChatTranscriptParser implements ChatTranscriptParser {
                         startIndex + 1,
                         lastContentLine + 1
                 ),
-                cursor
+                cursor,
+                timestamp
         );
     }
 
@@ -261,6 +301,26 @@ public class QqChatTranscriptParser implements ChatTranscriptParser {
                 && bytes[2] == (byte) 0xBF;
     }
 
+    private String[] normalizedLines(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            throw new IllegalArgumentException("chat transcript bytes are required");
+        }
+        String content = decode(bytes);
+        String normalized = content.replace("\r\n", "\n").replace('\r', '\n');
+        return normalized.split("\n", -1);
+    }
+
+    private Integer parseInteger(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
     private LocalDateTime parseDateTime(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
@@ -280,6 +340,9 @@ public class QqChatTranscriptParser implements ChatTranscriptParser {
         return dateTime;
     }
 
-    private record MessageParseResult(QqChatMessage message, int nextIndex) {
+    private record ScanResult(QqChatTranscript transcript, ChatTranscriptInspection inspection) {
+    }
+
+    private record MessageParseResult(QqChatMessage message, int nextIndex, LocalDateTime timestamp) {
     }
 }

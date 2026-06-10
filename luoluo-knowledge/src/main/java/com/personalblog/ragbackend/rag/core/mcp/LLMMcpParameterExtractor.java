@@ -20,6 +20,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * LLMMCPParameter提取器类
@@ -28,6 +32,12 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class LLMMcpParameterExtractor implements McpParameterExtractor {
+    private static final String WEATHER_TOOL_ID = "weather_query";
+    private static final Pattern WEATHER_QUERY_HINT_PATTERN = Pattern.compile(
+            "(今天|明天|后天|未来|这周|本周|下周|现在|今晚|早上|下午|晚上|凌晨|天气|预报|气温|温度|下雨|下雪|湿度|风速|风向|怎么样|如何|好吗|么)"
+    );
+    private static final Pattern WEATHER_CITY_PREFIX_PATTERN = Pattern.compile("^\\s*(请问|帮我|麻烦|想知道|告诉我|查一下|查询一下|查下|看看|帮忙)?\\s*(我在|我这里|我这边|当地|本地|当前位置|我所在|所在|这里|附近)?\\s*");
+    private static final Pattern WEATHER_CITY_SUFFIX_PATTERN = Pattern.compile("[\\s\\p{Punct}·、，。；;：:!?？！（）()【】\\[\\]\"'`~]+$");
 
     private final LLMService llmService;
     private final PromptTemplateLoader promptTemplateLoader;
@@ -60,11 +70,13 @@ public class LLMMcpParameterExtractor implements McpParameterExtractor {
                     .thinking(false)
                     .build());
             Map<String, Object> extracted = parseJsonResponse(raw, tool);
+            extracted.putAll(buildWeatherFallbackParameters(userQuestion, tool, extracted));
             fillDefaults(extracted, tool);
             return extracted;
         } catch (Exception exception) {
             log.warn("MCP parameter extraction failed, toolId={}", tool.name(), exception);
-            return fillDefaults(new HashMap<>(), tool);
+            Map<String, Object> fallback = buildWeatherFallbackParameters(userQuestion, tool, Map.of());
+            return fillDefaults(fallback, tool);
         }
     }
 
@@ -112,5 +124,135 @@ public class LLMMcpParameterExtractor implements McpParameterExtractor {
         sb.append("description: ").append(StrUtil.blankToDefault(tool.description(), "")).append('\n');
         sb.append("parameters: ").append(tool.inputSchema() == null ? Collections.emptyMap() : tool.inputSchema().properties());
         return sb.toString();
+    }
+
+    private Map<String, Object> buildWeatherFallbackParameters(String userQuestion, Tool tool, Map<String, Object> extracted) {
+        if (!isWeatherTool(tool)) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Object> fallback = new HashMap<>();
+        if (containsKeyWithValue(extracted, "city")) {
+            String normalizedCity = extractWeatherCityCandidate(String.valueOf(extracted.get("city")));
+            if (StrUtil.isNotBlank(normalizedCity)) {
+                String currentCity = String.valueOf(extracted.get("city")).trim();
+                if (!normalizedCity.equals(currentCity)) {
+                    fallback.put("city", normalizedCity);
+                }
+            }
+        } else if (extracted == null || !hasAnyLocationHint(extracted)) {
+            String city = extractWeatherCityCandidate(userQuestion);
+            if (StrUtil.isNotBlank(city)) {
+                fallback.put("city", city);
+            }
+        }
+
+        if (!containsKeyWithValue(extracted, "queryType")) {
+            String queryType = inferWeatherQueryType(userQuestion);
+            if (StrUtil.isNotBlank(queryType)) {
+                fallback.put("queryType", queryType);
+            }
+        }
+
+        if (!containsKeyWithValue(extracted, "days")) {
+            Integer days = inferForecastDays(userQuestion);
+            if (days != null) {
+                fallback.put("days", days);
+            }
+        }
+
+        return fallback;
+    }
+
+    private boolean isWeatherTool(Tool tool) {
+        return tool != null && WEATHER_TOOL_ID.equals(tool.name());
+    }
+
+    private boolean hasAnyLocationHint(Map<String, Object> params) {
+        return containsKeyWithValue(params, "city")
+                || containsKeyWithValue(params, "latitude")
+                || containsKeyWithValue(params, "longitude")
+                || containsKeyWithValue(params, "ip");
+    }
+
+    private boolean containsKeyWithValue(Map<String, Object> params, String key) {
+        return params != null && params.containsKey(key) && params.get(key) != null && StrUtil.isNotBlank(String.valueOf(params.get(key)).trim());
+    }
+
+    private String inferWeatherQueryType(String userQuestion) {
+        if (StrUtil.isBlank(userQuestion)) {
+            return "";
+        }
+        String normalized = userQuestion.replace(" ", "");
+        if (normalized.contains("未来") || normalized.contains("预报") || normalized.contains("几天")) {
+            return "forecast";
+        }
+        return "current";
+    }
+
+    private Integer inferForecastDays(String userQuestion) {
+        if (StrUtil.isBlank(userQuestion)) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("(?:未来|接下来|之后|近)?(\\d{1,2})\\s*天").matcher(userQuestion);
+        if (matcher.find()) {
+            try {
+                int days = Integer.parseInt(matcher.group(1));
+                return days >= 1 && days <= 7 ? days : null;
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        if (userQuestion.contains("三天") || userQuestion.contains("3天")) {
+            return 3;
+        }
+        if (userQuestion.contains("五天") || userQuestion.contains("5天")) {
+            return 5;
+        }
+        return null;
+    }
+
+    private String extractWeatherCityCandidate(String userQuestion) {
+        if (StrUtil.isBlank(userQuestion)) {
+            return "";
+        }
+
+        String normalized = normalizeQuestion(userQuestion);
+        if (StrUtil.isBlank(normalized)) {
+            return "";
+        }
+
+        int cutoff = findWeatherCutoff(normalized);
+        String prefix = cutoff > 0 ? normalized.substring(0, cutoff) : normalized;
+        prefix = WEATHER_CITY_PREFIX_PATTERN.matcher(prefix).replaceFirst("");
+        prefix = prefix.replaceAll("^[的在于从到去是和呀啊哦呢嘛吧]+", "");
+        prefix = prefix.replaceAll("[的在于从到去是和呀啊哦呢嘛吧]+$", "");
+        prefix = WEATHER_CITY_SUFFIX_PATTERN.matcher(prefix).replaceAll("");
+        return prefix.trim();
+    }
+
+    private String normalizeQuestion(String question) {
+        return question
+                .replace("\r", "")
+                .replace("\n", "")
+                .replace("\t", "")
+                .replace(" ", "")
+                .replace("　", "")
+                .trim();
+    }
+
+    private int findWeatherCutoff(String text) {
+        if (StrUtil.isBlank(text)) {
+            return -1;
+        }
+        int cutoff = -1;
+        Matcher matcher = WEATHER_QUERY_HINT_PATTERN.matcher(text);
+        while (matcher.find()) {
+            int start = matcher.start();
+            if (cutoff < 0 || start < cutoff) {
+                cutoff = start;
+            }
+        }
+        return cutoff;
     }
 }

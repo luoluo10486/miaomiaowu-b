@@ -48,6 +48,7 @@ public class ModelSelector {
                 .filter(Objects::nonNull)
                 .filter(candidate -> !Boolean.FALSE.equals(candidate.getEnabled()))
                 .filter(candidate -> !thinking || Boolean.TRUE.equals(candidate.getSupportsThinking()))
+                .filter(candidate -> allowCandidate(group, candidate, firstChoiceModelId))
                 .sorted(Comparator
                         .comparing((AIModelProperties.ModelCandidate candidate) ->
                                 !Objects.equals(resolveId(candidate), firstChoiceModelId))
@@ -56,6 +57,26 @@ public class ModelSelector {
                 .map(candidate -> buildTarget(candidate, providers))
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    private boolean allowCandidate(AIModelProperties.ModelGroup group,
+                                   AIModelProperties.ModelCandidate candidate,
+                                   String firstChoiceModelId) {
+        if (!isLocalProvider(candidate)) {
+            return true;
+        }
+        if (Boolean.TRUE.equals(aiProperties.getSelection().getAllowLocalFallback())) {
+            return true;
+        }
+        if (Objects.equals(resolveId(candidate), firstChoiceModelId)) {
+            return true;
+        }
+        return group == null
+                || group.getCandidates() == null
+                || group.getCandidates().stream()
+                .filter(Objects::nonNull)
+                .filter(each -> !Boolean.FALSE.equals(each.getEnabled()))
+                .noneMatch(each -> !isLocalProvider(each));
     }
 
     private ModelTarget buildTarget(AIModelProperties.ModelCandidate candidate,
@@ -85,5 +106,9 @@ public class ModelSelector {
 
     private boolean hasText(String text) {
         return text != null && !text.isBlank();
+    }
+
+    private boolean isLocalProvider(AIModelProperties.ModelCandidate candidate) {
+        return candidate != null && ModelProvider.OLLAMA.matches(candidate.getProvider());
     }
 }

@@ -18,11 +18,13 @@ import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeDocumentSear
 import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeDocumentVO;
 import com.personalblog.ragbackend.core.chunk.ChunkingMode;
 import com.personalblog.ragbackend.core.chunk.TextChunkingOptions;
+import com.personalblog.ragbackend.knowledge.config.RagDocumentUploadProperties;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeBaseDO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentChunkLogDO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeChunkDO;
 import com.personalblog.ragbackend.ingestion.dao.entity.IngestionPipelineDO;
+import com.personalblog.ragbackend.knowledge.dto.chat.QqChatMessage;
 import com.personalblog.ragbackend.knowledge.dto.chat.QqChatTranscript;
 import com.personalblog.ragbackend.knowledge.dto.document.DocumentChunk;
 import com.personalblog.ragbackend.knowledge.dto.document.DocumentChunkResponse;
@@ -31,6 +33,7 @@ import com.personalblog.ragbackend.knowledge.domain.enums.SourceType;
 import com.personalblog.ragbackend.knowledge.domain.enums.ProcessMode;
 import com.personalblog.ragbackend.knowledge.domain.enums.DocumentStatus;
 import com.personalblog.ragbackend.knowledge.config.KnowledgeScheduleProperties;
+import com.personalblog.ragbackend.knowledge.config.RagKnowledgeProcessingProperties;
 import com.personalblog.ragbackend.core.parser.DocumentParser;
 import com.personalblog.ragbackend.core.parser.DocumentParserSelector;
 import com.personalblog.ragbackend.knowledge.handler.RemoteFileFetcher;
@@ -45,6 +48,7 @@ import com.personalblog.ragbackend.knowledge.service.KnowledgeBaseAccessService;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeDocumentScheduleService;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeChunkService;
 import com.personalblog.ragbackend.knowledge.service.KnowledgeDocumentService;
+import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptCacheService;
 import com.personalblog.ragbackend.knowledge.service.chat.ChatChunkingOptions;
 import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptParser;
 import com.personalblog.ragbackend.knowledge.service.chat.ChatTranscriptParserRegistry;
@@ -116,6 +120,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final KnowledgeDocumentScheduleService knowledgeDocumentScheduleService;
     private final KnowledgeChunkService knowledgeChunkService;
     private final KnowledgeBaseAccessService knowledgeBaseAccessService;
+    private final ChatTranscriptCacheService chatTranscriptCacheService;
     private final ChatTranscriptParserRegistry chatTranscriptParserRegistry;
     private final ChatTranscriptChunkService chatTranscriptChunkService;
     private final VectorStoreService vectorStoreService;
@@ -125,6 +130,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final ObjectMapper objectMapper;
     private final RocketMQTemplate rocketMQTemplate;
     private final RemoteFileFetcher remoteFileFetcher;
+    private final RagKnowledgeProcessingProperties processingProperties;
+    private final RagDocumentUploadProperties uploadProperties;
 
     public KnowledgeDocumentServiceImpl(KnowledgeBaseMapper knowledgeBaseMapper,
                                         KnowledgeDocumentMapper knowledgeDocumentMapper,
@@ -141,6 +148,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                                         KnowledgeDocumentScheduleService knowledgeDocumentScheduleService,
                                         KnowledgeChunkService knowledgeChunkService,
                                         KnowledgeBaseAccessService knowledgeBaseAccessService,
+                                        ChatTranscriptCacheService chatTranscriptCacheService,
                                         ChatTranscriptParserRegistry chatTranscriptParserRegistry,
                                         ChatTranscriptChunkService chatTranscriptChunkService,
                                         VectorStoreService vectorStoreService,
@@ -149,7 +157,9 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                                         TransactionOperations transactionOperations,
                                         ObjectMapper objectMapper,
                                         RocketMQTemplate rocketMQTemplate,
-                                        RemoteFileFetcher remoteFileFetcher) {
+                                        RemoteFileFetcher remoteFileFetcher,
+                                        RagKnowledgeProcessingProperties processingProperties,
+                                        RagDocumentUploadProperties uploadProperties) {
         this.knowledgeBaseMapper = knowledgeBaseMapper;
         this.knowledgeDocumentMapper = knowledgeDocumentMapper;
         this.knowledgeChunkMapper = knowledgeChunkMapper;
@@ -165,6 +175,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         this.knowledgeDocumentScheduleService = knowledgeDocumentScheduleService;
         this.knowledgeChunkService = knowledgeChunkService;
         this.knowledgeBaseAccessService = knowledgeBaseAccessService;
+        this.chatTranscriptCacheService = chatTranscriptCacheService;
         this.chatTranscriptParserRegistry = chatTranscriptParserRegistry;
         this.chatTranscriptChunkService = chatTranscriptChunkService;
         this.vectorStoreService = vectorStoreService;
@@ -174,6 +185,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         this.objectMapper = objectMapper;
         this.rocketMQTemplate = rocketMQTemplate;
         this.remoteFileFetcher = remoteFileFetcher;
+        this.processingProperties = processingProperties;
+        this.uploadProperties = uploadProperties;
     }
 
     @Override
@@ -188,6 +201,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             throw new IllegalArgumentException("file is required");
         }
         ProcessMode processMode = normalizeProcessMode(requestParam.getProcessMode());
+        validateUploadSize(file, sourceType, processMode);
         log.info(
                 "Uploading knowledge document: kbId={}, kbName='{}', collection='{}', sourceType='{}', processMode='{}', filename='{}', fileSize={}, pipelineId='{}', chunkStrategy='{}'",
                 knowledgeBase.getId(),
@@ -418,12 +432,12 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         }
 
         long embedStart = System.currentTimeMillis();
-        List<List<Float>> embeddings = embeddingService.embedBatch(
-                chunkResponse.chunks().stream().map(DocumentChunk::content).toList()
+        List<VectorChunk> vectorChunks = buildVectorChunksInBatches(
+                document,
+                chunkResponse.chunks(),
+                Math.max(1, processingProperties.getEmbeddingBatchSize())
         );
         long embedDuration = System.currentTimeMillis() - embedStart;
-
-        List<VectorChunk> vectorChunks = buildVectorChunks(document, chunkResponse.chunks(), embeddings);
         return new ChunkProcessResult(vectorChunks, extractDuration, chunkDuration, embedDuration);
     }
 
@@ -431,30 +445,45 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         long extractStart = System.currentTimeMillis();
         Map<String, Object> documentMetadata = readJsonMap(document.getMetadataJson());
         ChatTranscriptParser parser = resolveChatTranscriptParser(documentMetadata);
-        QqChatTranscript transcript = parser.parse(file);
-        long extractDuration = System.currentTimeMillis() - extractStart;
-        if (transcript.messages().isEmpty()) {
-            throw new IllegalStateException("chat transcript contains no messages");
-        }
-
         String bucketMonth = stringValue(documentMetadata, "bucketMonth");
         if (!StringUtils.hasText(bucketMonth)) {
             throw new IllegalStateException("chat transcript document is missing bucketMonth metadata");
         }
+        byte[] fileBytes = getBytes(file);
+        String sourceFileName = stringValue(documentMetadata, "sourceFile");
+        if (!StringUtils.hasText(sourceFileName)) {
+            sourceFileName = document.getDocName();
+        }
+        String sourceFileHash = stringValue(documentMetadata, "sourceFileHash");
+        String cacheKey = StringUtils.hasText(sourceFileHash) ? sourceFileHash : document.getFileUrl();
+        ChatTranscriptCacheService.CachedTranscript cachedTranscript = chatTranscriptCacheService.getOrParse(
+                cacheKey,
+                fileBytes,
+                sourceFileName,
+                parser
+        );
+        QqChatTranscript transcript = cachedTranscript.transcript();
+        List<QqChatMessage> monthlyMessages = cachedTranscript.monthlyMessages(bucketMonth);
+        long extractDuration = System.currentTimeMillis() - extractStart;
+        if (monthlyMessages.isEmpty()) {
+            throw new IllegalStateException("chat transcript contains no messages for month " + bucketMonth);
+        }
 
         ChatChunkingOptions options = buildChatChunkingOptions(document, documentMetadata);
         long chunkStart = System.currentTimeMillis();
-        List<DocumentChunk> chatChunks = chatTranscriptChunkService.chunkTranscript(transcript, bucketMonth, options);
+        List<DocumentChunk> chatChunks = chatTranscriptChunkService.chunkTranscript(transcript, bucketMonth, monthlyMessages, options);
         long chunkDuration = System.currentTimeMillis() - chunkStart;
         if (chatChunks.isEmpty()) {
             throw new IllegalStateException("chat transcript chunking produced no chunks");
         }
 
         long embedStart = System.currentTimeMillis();
-        List<List<Float>> embeddings = embeddingService.embedBatch(chatChunks.stream().map(DocumentChunk::content).toList());
+        List<VectorChunk> vectorChunks = buildVectorChunksInBatches(
+                document,
+                chatChunks,
+                Math.max(1, processingProperties.getChatEmbeddingBatchSize())
+        );
         long embedDuration = System.currentTimeMillis() - embedStart;
-
-        List<VectorChunk> vectorChunks = buildVectorChunks(document, chatChunks, embeddings);
         return new ChunkProcessResult(vectorChunks, extractDuration, chunkDuration, embedDuration);
     }
 
@@ -717,24 +746,11 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 log.warn("enable document skipped because no chunk found, docId={}", docId);
                 return;
             }
-            List<String> contents = chunks.stream()
-                    .map(KnowledgeChunkVO::getContent)
-                    .toList();
-            List<List<Float>> embeddings = embeddingService.embedBatch(contents);
-            if (embeddings == null || embeddings.size() != chunks.size()) {
-                throw new IllegalStateException("embedding result size mismatch");
-            }
-            vectorDocuments = new ArrayList<>(chunks.size());
-            for (int index = 0; index < chunks.size(); index++) {
-                KnowledgeChunkVO chunk = chunks.get(index);
-                vectorDocuments.add(VectorChunk.builder()
-                        .chunkId(chunk.getId())
-                        .content(chunk.getContent())
-                        .metadata(buildVectorMetadata(document, chunk))
-                        .embedding(toArray(embeddings.get(index)))
-                        .index(chunk.getChunkIndex())
-                        .build());
-            }
+            vectorDocuments = buildVectorChunks(
+                    document,
+                    chunks,
+                    Math.max(1, processingProperties.getEmbeddingBatchSize())
+            );
         }
 
         List<VectorChunk> finalVectorDocuments = vectorDocuments;
@@ -876,6 +892,70 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                     .metadata(buildVectorMetadata(document, chunk))
                     .embedding(toArray(embeddings.get(index)))
                     .build());
+        }
+        return vectorChunks;
+    }
+
+    private List<VectorChunk> buildVectorChunksInBatches(KnowledgeDocumentDO document,
+                                                         List<DocumentChunk> chunks,
+                                                         int batchSize) {
+        if (chunks == null || chunks.isEmpty()) {
+            return List.of();
+        }
+        if (chunks.size() > batchSize) {
+            log.info("embedding document chunks in batches, docId={}, totalChunks={}, batchSize={}",
+                    document.getId(), chunks.size(), batchSize);
+        }
+        List<VectorChunk> vectorChunks = new ArrayList<>(chunks.size());
+        for (int start = 0; start < chunks.size(); start += batchSize) {
+            int end = Math.min(chunks.size(), start + batchSize);
+            List<DocumentChunk> batch = chunks.subList(start, end);
+            log.info("embedding document chunk batch, docId={}, batchStart={}, batchEnd={}, batchSize={}",
+                    document.getId(), start, end - 1, batch.size());
+            List<String> contents = new ArrayList<>(batch.size());
+            for (DocumentChunk chunk : batch) {
+                contents.add(chunk.content());
+            }
+            List<List<Float>> embeddings = embeddingService.embedBatch(contents);
+            vectorChunks.addAll(buildVectorChunks(document, batch, embeddings));
+        }
+        return vectorChunks;
+    }
+
+    private List<VectorChunk> buildVectorChunks(KnowledgeDocumentDO document,
+                                                List<KnowledgeChunkVO> chunks,
+                                                int batchSize) {
+        if (chunks == null || chunks.isEmpty()) {
+            return List.of();
+        }
+        if (chunks.size() > batchSize) {
+            log.info("re-indexing document chunks in batches, docId={}, totalChunks={}, batchSize={}",
+                    document.getId(), chunks.size(), batchSize);
+        }
+        List<VectorChunk> vectorChunks = new ArrayList<>(chunks.size());
+        for (int start = 0; start < chunks.size(); start += batchSize) {
+            int end = Math.min(chunks.size(), start + batchSize);
+            List<KnowledgeChunkVO> batch = chunks.subList(start, end);
+            log.info("re-indexing document chunk batch, docId={}, batchStart={}, batchEnd={}, batchSize={}",
+                    document.getId(), start, end - 1, batch.size());
+            List<String> contents = new ArrayList<>(batch.size());
+            for (KnowledgeChunkVO chunk : batch) {
+                contents.add(chunk.getContent());
+            }
+            List<List<Float>> embeddings = embeddingService.embedBatch(contents);
+            if (embeddings == null || embeddings.size() != batch.size()) {
+                throw new IllegalStateException("embedding result size mismatch");
+            }
+            for (int index = 0; index < batch.size(); index++) {
+                KnowledgeChunkVO chunk = batch.get(index);
+                vectorChunks.add(VectorChunk.builder()
+                        .chunkId(chunk.getId())
+                        .content(chunk.getContent())
+                        .metadata(buildVectorMetadata(document, chunk))
+                        .embedding(toArray(embeddings.get(index)))
+                        .index(chunk.getChunkIndex())
+                        .build());
+            }
         }
         return vectorChunks;
     }
@@ -1054,51 +1134,75 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         List<VectorChunk> safeChunks = chunkResults == null ? List.of() : chunkResults;
         log.info("persisting document chunks and vectors, docId={}, kbId={}, chunkCount={}, collection={}",
                 document.getId(), document.getKbId(), safeChunks.size(), knowledgeBase.getCollectionName());
-        transactionOperations.executeWithoutResult(status -> {
-            log.info("cleaning old chunk data, docId={}", document.getId());
-            knowledgeChunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunkDO>()
-                    .eq(KnowledgeChunkDO::getDocId, document.getId()));
+        try {
+            transactionOperations.executeWithoutResult(status -> {
+                log.info("cleaning old chunk data, docId={}", document.getId());
+                knowledgeChunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunkDO>()
+                        .eq(KnowledgeChunkDO::getDocId, document.getId()));
 
-            log.info("cleaning old pg vectors, docId={}, collection={}", document.getId(), knowledgeBase.getCollectionName());
-            vectorStoreService.deleteDocumentVectors(knowledgeBase.getCollectionName(), String.valueOf(document.getId()));
+                log.info("cleaning old pg vectors, docId={}, collection={}", document.getId(), knowledgeBase.getCollectionName());
+                vectorStoreService.deleteDocumentVectors(knowledgeBase.getCollectionName(), String.valueOf(document.getId()));
 
-            List<KnowledgeChunkDO> persistedChunks = new ArrayList<>(safeChunks.size());
-            for (VectorChunk chunk : safeChunks) {
-                KnowledgeChunkDO entity = new KnowledgeChunkDO();
-                Map<String, Object> metadata = mergeMetadata(chunk.getMetadata());
-                entity.setKbId(document.getKbId());
-                entity.setDocId(document.getId());
-                entity.setChunkIndex(chunk.getIndex());
-                entity.setContent(chunk.getContent());
-                entity.setContentHash(sha256Hex(chunk.getContent()));
-                entity.setCharCount(chunk.getContent() == null ? 0 : chunk.getContent().length());
-                entity.setTokenCount(resolveTokenCount(chunk.getContent()));
-                entity.setEnabled(1);
-                entity.setMetadata(toJson(metadata));
-                entity.setCreatedBy(parseUserId(UserContext.getUserId()));
-                entity.setUpdatedBy(parseUserId(UserContext.getUserId()));
-                knowledgeChunkMapper.insert(entity);
-                chunk.setChunkId(String.valueOf(entity.getId()));
-                metadata.put("chunkId", chunk.getChunkId());
-                metadata.put("chunk_id", chunk.getChunkId());
-                entity.setMetadata(toJson(metadata));
-                chunk.setMetadata(metadata);
-                knowledgeChunkMapper.updateById(entity);
-                persistedChunks.add(entity);
-            }
+                for (VectorChunk chunk : safeChunks) {
+                    KnowledgeChunkDO entity = new KnowledgeChunkDO();
+                    Map<String, Object> metadata = mergeMetadata(chunk.getMetadata());
+                    entity.setKbId(document.getKbId());
+                    entity.setDocId(document.getId());
+                    entity.setChunkIndex(chunk.getIndex());
+                    entity.setContent(chunk.getContent());
+                    entity.setContentHash(sha256Hex(chunk.getContent()));
+                    entity.setCharCount(chunk.getContent() == null ? 0 : chunk.getContent().length());
+                    entity.setTokenCount(resolveTokenCount(chunk.getContent()));
+                    entity.setEnabled(1);
+                    entity.setMetadata(toJson(metadata));
+                    entity.setCreatedBy(parseUserId(UserContext.getUserId()));
+                    entity.setUpdatedBy(parseUserId(UserContext.getUserId()));
+                    knowledgeChunkMapper.insert(entity);
+                    chunk.setChunkId(String.valueOf(entity.getId()));
+                    metadata.put("chunkId", chunk.getChunkId());
+                    metadata.put("chunk_id", chunk.getChunkId());
+                    entity.setMetadata(toJson(metadata));
+                    chunk.setMetadata(metadata);
+                    knowledgeChunkMapper.updateById(entity);
+                }
+
+                document.setChunkCount(safeChunks.size());
+                document.setUpdatedBy(parseUserId(UserContext.getUserId()));
+                knowledgeDocumentMapper.updateById(document);
+            });
 
             if (!safeChunks.isEmpty()) {
                 log.info("indexing vectors, docId={}, collection={}, chunkCount={}", document.getId(), knowledgeBase.getCollectionName(), safeChunks.size());
                 vectorStoreService.indexDocumentChunks(knowledgeBase.getCollectionName(), String.valueOf(document.getId()), safeChunks);
             }
 
-            document.setChunkCount(safeChunks.size());
-            document.setStatus(DocumentStatus.SUCCESS.getCode());
-            document.setUpdatedBy(parseUserId(UserContext.getUserId()));
-            knowledgeDocumentMapper.updateById(document);
+            transactionOperations.executeWithoutResult(status -> {
+                document.setStatus(DocumentStatus.SUCCESS.getCode());
+                document.setUpdatedBy(parseUserId(UserContext.getUserId()));
+                knowledgeDocumentMapper.updateById(document);
+            });
             log.info("document chunk persistence done, docId={}, chunkCount={}", document.getId(), safeChunks.size());
-        });
-        return safeChunks.size();
+            return safeChunks.size();
+        } catch (RuntimeException exception) {
+            cleanupPersistFailure(document, knowledgeBase);
+            throw exception;
+        }
+    }
+
+    private void cleanupPersistFailure(KnowledgeDocumentDO document, KnowledgeBaseDO knowledgeBase) {
+        try {
+            transactionOperations.executeWithoutResult(status -> {
+                knowledgeChunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunkDO>()
+                        .eq(KnowledgeChunkDO::getDocId, document.getId()));
+                vectorStoreService.deleteDocumentVectors(knowledgeBase.getCollectionName(), String.valueOf(document.getId()));
+                document.setChunkCount(0);
+                document.setStatus(DocumentStatus.FAILED.getCode());
+                document.setUpdatedBy(parseUserId(UserContext.getUserId()));
+                knowledgeDocumentMapper.updateById(document);
+            });
+        } catch (RuntimeException cleanupException) {
+            log.warn("cleanup after chunk persistence failure also failed, docId={}", document.getId(), cleanupException);
+        }
     }
 
     private Map<String, Object> buildVectorMetadata(KnowledgeDocumentDO document, DocumentChunk chunk) {
@@ -1238,6 +1342,23 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 .size(file == null ? null : file.getSize())
                 .originalFilename(originalFilename)
                 .build();
+    }
+
+    private void validateUploadSize(MultipartFile file, SourceType sourceType, ProcessMode processMode) {
+        if (file == null || file.isEmpty() || sourceType == SourceType.URL) {
+            return;
+        }
+        long fileSize = Math.max(0L, file.getSize());
+        long limitMb = processMode == ProcessMode.PIPELINE
+                ? Math.max(1, uploadProperties.getMaxPipelineUploadSizeMb())
+                : Math.max(1, uploadProperties.getMaxDocumentUploadSizeMb());
+        long maxBytes = limitMb * 1024L * 1024L;
+        if (fileSize > maxBytes) {
+            throw new IllegalArgumentException("file too large, processMode="
+                    + processMode.getValue()
+                    + ", maxSizeMb="
+                    + limitMb);
+        }
     }
 
     private KnowledgeBaseDO requireKnowledgeBase(Long kbId) {

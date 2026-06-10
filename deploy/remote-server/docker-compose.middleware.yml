@@ -1,0 +1,175 @@
+name: personal-blog-middleware
+
+services:
+  postgres:
+    image: m.daocloud.io/docker.io/pgvector/pgvector:pg16
+    container_name: personal-blog-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ragent
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: change_me_postgres
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ragent"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: m.daocloud.io/docker.io/library/redis:7.2-alpine
+    container_name: personal-blog-redis
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "change_me_redis", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./volumes/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "change_me_redis", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  rocketmq-nameserver:
+    image: m.daocloud.io/docker.io/apache/rocketmq:5.3.2
+    container_name: personal-blog-rocketmq-nameserver
+    restart: unless-stopped
+    command: sh mqnamesrv
+    environment:
+      JAVA_OPT_EXT: "-Xms128m -Xmx128m -Xmn64m"
+    ports:
+      - "9876:9876"
+    volumes:
+      - ./volumes/rocketmq/nameserver/logs:/home/rocketmq/logs
+
+  rocketmq-broker:
+    image: m.daocloud.io/docker.io/apache/rocketmq:5.3.2
+    container_name: personal-blog-rocketmq-broker
+    restart: unless-stopped
+    command: sh mqbroker -c /home/rocketmq/rocketmq-5.3.2/conf/broker.conf
+    environment:
+      JAVA_OPT_EXT: "-Xms256m -Xmx256m -Xmn128m"
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    volumes:
+      - ./rocketmq/broker.conf:/home/rocketmq/rocketmq-5.3.2/conf/broker.conf
+      - ./volumes/rocketmq/broker/logs:/home/rocketmq/logs
+      - ./volumes/rocketmq/broker/store:/home/rocketmq/store
+    depends_on:
+      - rocketmq-nameserver
+
+  rocketmq-dashboard:
+    image: m.daocloud.io/docker.io/apacherocketmq/rocketmq-dashboard:latest
+    container_name: personal-blog-rocketmq-dashboard
+    restart: unless-stopped
+    environment:
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-nameserver:9876 -Dserver.port=8080"
+    ports:
+      - "8082:8080"
+    depends_on:
+      - rocketmq-nameserver
+
+  rustfs:
+    image: m.daocloud.io/docker.io/rustfs/rustfs:1.0.0-alpha.72
+    container_name: personal-blog-rustfs
+    restart: unless-stopped
+    command:
+      - "--address"
+      - ":9000"
+      - "--console-enable"
+      - "--access-key"
+      - "rustfsadmin"
+      - "--secret-key"
+      - "rustfsadmin"
+      - "/data"
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./volumes/rustfs:/data
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -S --spider http://localhost:9000/ 2>&1 | grep -Eq 'HTTP/1.1 (200|403)'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  etcd:
+    image: m.daocloud.io/quay.io/coreos/etcd:v3.5.18
+    container_name: personal-blog-etcd
+    restart: unless-stopped
+    profiles: ["milvus"]
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command: >
+      etcd
+      --advertise-client-urls=http://etcd:2379
+      --listen-client-urls=http://0.0.0.0:2379
+      --data-dir=/etcd
+    volumes:
+      - ./volumes/etcd:/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  milvus-standalone:
+    image: m.daocloud.io/docker.io/milvusdb/milvus:v2.6.6
+    container_name: personal-blog-milvus
+    restart: unless-stopped
+    profiles: ["milvus"]
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: rustfs:9000
+      MINIO_ACCESS_KEY_ID: rustfsadmin
+      MINIO_SECRET_ACCESS_KEY: rustfsadmin
+    volumes:
+      - ./volumes/milvus:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      etcd:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+
+  attu:
+    image: m.daocloud.io/docker.io/zilliz/attu:v2.6.3
+    container_name: personal-blog-attu
+    restart: unless-stopped
+    profiles: ["milvus"]
+    environment:
+      MILVUS_URL: milvus-standalone:19530
+    ports:
+      - "8000:3000"
+    depends_on:
+      milvus-standalone:
+        condition: service_healthy
+
+networks:
+  default:
+    name: personal-blog-net

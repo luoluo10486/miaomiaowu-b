@@ -45,7 +45,8 @@ public class OpenMeteoWeatherApiClient implements WeatherApiClient {
                 .queryParam("count", 1)
                 .queryParam("language", "zh")
                 .queryParam("format", "json")
-                .build(true)
+                .encode(StandardCharsets.UTF_8)
+                .build()
                 .toUriString();
         GeocodingResponse response = getForObject(url, GeocodingResponse.class);
         if (response == null || CollUtil.isEmpty(response.results())) {

@@ -1,6 +1,7 @@
 package com.personalblog.ragbackend.knowledge.service.document;
 
 import com.personalblog.ragbackend.framework.exception.ObjectStorageException;
+import com.personalblog.ragbackend.knowledge.config.RagDocumentUploadProperties;
 import com.personalblog.ragbackend.knowledge.config.RustfsProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
@@ -23,7 +24,9 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 知识文件存储服务
@@ -34,11 +37,15 @@ public class KnowledgeFileStorageService {
     private static final Tika TIKA = new Tika();
     private final S3Client s3Client;
     private final RustfsProperties rustfsProperties;
+    private final RagDocumentUploadProperties uploadProperties;
+    private final Set<String> ensuredBuckets = ConcurrentHashMap.newKeySet();
 
     public KnowledgeFileStorageService(S3Client s3Client,
-                                       RustfsProperties rustfsProperties) {
+                                       RustfsProperties rustfsProperties,
+                                       RagDocumentUploadProperties uploadProperties) {
         this.s3Client = s3Client;
         this.rustfsProperties = rustfsProperties;
+        this.uploadProperties = uploadProperties;
     }
 
     public String store(MultipartFile file, String collectionName, String docName) {
@@ -50,7 +57,9 @@ public class KnowledgeFileStorageService {
         String originalFilename = file.getOriginalFilename();
         String key = buildObjectKey(docName, originalFilename);
         String contentType = resolveContentType(file);
-        long size = file.getSize();
+        long fileSize = Math.max(0L, file.getSize());
+        validateUploadSize(fileSize, uploadProperties.getMaxDocumentUploadSizeMb(), collectionName, originalFilename);
+        ensureTempFreeSpace(fileSize);
 
         log.info(
                 "Storing knowledge file: collection='{}', bucket='{}', endpoint='{}', key='{}', filename='{}', size={}, contentType='{}'",
@@ -59,22 +68,15 @@ public class KnowledgeFileStorageService {
                 rustfsProperties.getUrl(),
                 key,
                 originalFilename,
-                size,
+                file.getSize(),
                 contentType
         );
 
+        Path tempFile = null;
         try {
             ensureBucketExists(bucketName);
-            try (InputStream inputStream = file.getInputStream()) {
-                s3Client.putObject(builder -> builder
-                                .bucket(bucketName)
-                                .key(key)
-                                .contentType(contentType),
-                        RequestBody.fromInputStream(inputStream, size));
-            }
-            String url = toS3Url(bucketName, key);
-            log.info("Knowledge file stored successfully: bucket='{}', key='{}', url='{}'", bucketName, key, url);
-            return url;
+            tempFile = createTempUploadFile(file, originalFilename);
+            return putObjectFromFile(tempFile, bucketName, key, contentType);
         } catch (ObjectStorageException exception) {
             log.error(
                     "Object storage error while storing knowledge file: collection='{}', bucket='{}', key='{}', filename='{}'",
@@ -98,6 +100,112 @@ public class KnowledgeFileStorageService {
         } catch (S3Exception exception) {
             log.error(
                     "Object storage error while storing knowledge file: collection='{}', bucket='{}', key='{}', filename='{}', status={}, message={}",
+                    collectionName,
+                    bucketName,
+                    key,
+                    originalFilename,
+                    exception.statusCode(),
+                    exception.getMessage(),
+                    exception
+            );
+            throw new ObjectStorageException("Failed to store knowledge file in object storage", exception);
+        } finally {
+            deleteTempFileQuietly(tempFile);
+        }
+    }
+
+    public String store(byte[] content,
+                        String collectionName,
+                        String docName,
+                        String originalFilename,
+                        String contentType) {
+        if (content == null || content.length == 0) {
+            return null;
+        }
+
+        String bucketName = resolveBucketName(collectionName);
+        String key = buildObjectKey(docName, originalFilename);
+        String resolvedContentType = resolveContentType(contentType, originalFilename, content);
+        validateUploadSize(content.length, uploadProperties.getMaxDocumentUploadSizeMb(), collectionName, originalFilename);
+
+        log.info(
+                "Storing in-memory knowledge file: collection='{}', bucket='{}', endpoint='{}', key='{}', filename='{}', size={}, contentType='{}'",
+                collectionName,
+                bucketName,
+                rustfsProperties.getUrl(),
+                key,
+                originalFilename,
+                content.length,
+                resolvedContentType
+        );
+
+        try {
+            ensureBucketExists(bucketName);
+            s3Client.putObject(builder -> builder
+                            .bucket(bucketName)
+                            .key(key)
+                            .contentType(resolvedContentType),
+                    RequestBody.fromBytes(content));
+            String url = toS3Url(bucketName, key);
+            log.info("Knowledge file stored successfully: bucket='{}', key='{}', url='{}'", bucketName, key, url);
+            return url;
+        } catch (S3Exception exception) {
+            log.error(
+                    "Object storage error while storing in-memory knowledge file: collection='{}', bucket='{}', key='{}', filename='{}', status={}, message={}",
+                    collectionName,
+                    bucketName,
+                    key,
+                    originalFilename,
+                    exception.statusCode(),
+                    exception.getMessage(),
+                    exception
+            );
+            throw new ObjectStorageException("Failed to store knowledge file in object storage", exception);
+        }
+    }
+
+    public String store(Path sourceFile,
+                        long size,
+                        String collectionName,
+                        String docName,
+                        String originalFilename,
+                        String contentType) {
+        if (sourceFile == null || !Files.exists(sourceFile)) {
+            return null;
+        }
+
+        String bucketName = resolveBucketName(collectionName);
+        String key = buildObjectKey(docName, originalFilename);
+        String resolvedContentType = resolveContentType(contentType, originalFilename);
+        validateUploadSize(size, uploadProperties.getMaxRemoteDownloadSizeMb(), collectionName, originalFilename);
+
+        log.info(
+                "Storing file from path: collection='{}', bucket='{}', endpoint='{}', key='{}', filename='{}', size={}, contentType='{}'",
+                collectionName,
+                bucketName,
+                rustfsProperties.getUrl(),
+                key,
+                originalFilename,
+                size,
+                resolvedContentType
+        );
+
+        try {
+            ensureBucketExists(bucketName);
+            return putObjectFromFile(sourceFile, bucketName, key, resolvedContentType);
+        } catch (ObjectStorageException exception) {
+            log.error(
+                    "Object storage error while storing path-based knowledge file: collection='{}', bucket='{}', key='{}', filename='{}'",
+                    collectionName,
+                    bucketName,
+                    key,
+                    originalFilename,
+                    exception
+            );
+            throw exception;
+        } catch (S3Exception exception) {
+            log.error(
+                    "Object storage error while storing path-based knowledge file: collection='{}', bucket='{}', key='{}', filename='{}', status={}, message={}",
                     collectionName,
                     bucketName,
                     key,
@@ -175,12 +283,17 @@ public class KnowledgeFileStorageService {
 
     public void ensureBucketExists(String bucketName) {
         validateBucketName(bucketName);
+        if (ensuredBuckets.contains(bucketName)) {
+            return;
+        }
         try {
             log.info("Ensuring knowledge file bucket exists: bucket='{}', endpoint='{}'", bucketName, rustfsProperties.getUrl());
             s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
+            ensuredBuckets.add(bucketName);
             log.info("Knowledge file bucket created or already available: bucket='{}'", bucketName);
         } catch (S3Exception exception) {
             if (exception.statusCode() == 409) {
+                ensuredBuckets.add(bucketName);
                 log.info("Knowledge file bucket already exists: bucket='{}'", bucketName);
                 return;
             }
@@ -213,6 +326,56 @@ public class KnowledgeFileStorageService {
             return TIKA.detect(inputStream, file.getOriginalFilename());
         } catch (IOException exception) {
             return file.getOriginalFilename() == null ? "application/octet-stream" : TIKA.detect(file.getOriginalFilename());
+        }
+    }
+
+    private String resolveContentType(String contentType, String originalFilename, byte[] content) {
+        if (StringUtils.hasText(contentType)) {
+            return contentType;
+        }
+        if (content != null && content.length > 0) {
+            return TIKA.detect(content, originalFilename);
+        }
+        return fileNameToContentType(originalFilename);
+    }
+
+    private String resolveContentType(String contentType, String originalFilename) {
+        if (StringUtils.hasText(contentType)) {
+            return contentType;
+        }
+        return fileNameToContentType(originalFilename);
+    }
+
+    private String fileNameToContentType(String originalFilename) {
+        return StringUtils.hasText(originalFilename) ? TIKA.detect(originalFilename) : "application/octet-stream";
+    }
+
+    private Path createTempUploadFile(MultipartFile file, String originalFilename) throws IOException {
+        validateUploadSize(Math.max(0L, file.getSize()), uploadProperties.getMaxDocumentUploadSizeMb(), null, originalFilename);
+        Path tempFile = Files.createTempFile("knowledge-upload-", suffixOf(originalFilename));
+        file.transferTo(tempFile);
+        return tempFile;
+    }
+
+    private String putObjectFromFile(Path tempFile, String bucketName, String key, String contentType) {
+        s3Client.putObject(builder -> builder
+                        .bucket(bucketName)
+                        .key(key)
+                        .contentType(contentType),
+                RequestBody.fromFile(tempFile));
+        String url = toS3Url(bucketName, key);
+        log.info("Knowledge file stored successfully: bucket='{}', key='{}', url='{}'", bucketName, key, url);
+        return url;
+    }
+
+    private void deleteTempFileQuietly(Path tempFile) {
+        if (tempFile == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(tempFile);
+        } catch (IOException ignored) {
+            // best effort cleanup
         }
     }
 
@@ -254,6 +417,35 @@ public class KnowledgeFileStorageService {
     private void validateBucketName(String bucketName) {
         if (!StringUtils.hasText(bucketName)) {
             throw new IllegalArgumentException("bucketName 不能为空");
+        }
+    }
+
+    private void validateUploadSize(long size, Integer maxSizeMb, String collectionName, String originalFilename) {
+        if (maxSizeMb == null || maxSizeMb <= 0) {
+            return;
+        }
+        long maxBytes = maxSizeMb * 1024L * 1024L;
+        if (size > maxBytes) {
+            throw new IllegalArgumentException("file too large, collection="
+                    + collectionName
+                    + ", filename="
+                    + originalFilename
+                    + ", maxSizeMb="
+                    + maxSizeMb);
+        }
+    }
+
+    private void ensureTempFreeSpace(long incomingSize) {
+        long minFreeBytes = Math.max(1, uploadProperties.getMinTempFreeSpaceMb()) * 1024L * 1024L;
+        try {
+            Path tempDir = Path.of(System.getProperty("java.io.tmpdir"));
+            long usableSpace = Files.getFileStore(tempDir).getUsableSpace();
+            long requiredSpace = Math.max(minFreeBytes, incomingSize + minFreeBytes);
+            if (usableSpace < requiredSpace) {
+                throw new IllegalStateException("insufficient temp disk space, usableBytes=" + usableSpace);
+            }
+        } catch (IOException exception) {
+            log.warn("Failed to inspect temp disk space, continue cautiously", exception);
         }
     }
 

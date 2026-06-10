@@ -17,6 +17,7 @@ import com.personalblog.ragbackend.knowledge.controller.vo.KnowledgeChunkVO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeBaseDO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeChunkDO;
 import com.personalblog.ragbackend.knowledge.dao.entity.KnowledgeDocumentDO;
+import com.personalblog.ragbackend.knowledge.config.RagKnowledgeProcessingProperties;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeBaseMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeChunkMapper;
 import com.personalblog.ragbackend.knowledge.mapper.KnowledgeDocumentMapper;
@@ -51,6 +52,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     private final EmbeddingService embeddingService;
     private final TokenCounterService tokenCounterService;
     private final ObjectMapper objectMapper;
+    private final RagKnowledgeProcessingProperties processingProperties;
 
     public KnowledgeChunkServiceImpl(KnowledgeChunkMapper knowledgeChunkMapper,
                                      KnowledgeDocumentMapper knowledgeDocumentMapper,
@@ -59,7 +61,8 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
                                      VectorStoreService vectorStoreService,
                                      EmbeddingService embeddingService,
                                      TokenCounterService tokenCounterService,
-                                     ObjectMapper objectMapper) {
+                                     ObjectMapper objectMapper,
+                                     RagKnowledgeProcessingProperties processingProperties) {
         this.knowledgeChunkMapper = knowledgeChunkMapper;
         this.knowledgeDocumentMapper = knowledgeDocumentMapper;
         this.knowledgeBaseMapper = knowledgeBaseMapper;
@@ -68,6 +71,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         this.embeddingService = embeddingService;
         this.tokenCounterService = tokenCounterService;
         this.objectMapper = objectMapper;
+        this.processingProperties = processingProperties;
     }
 
     @Override
@@ -277,21 +281,12 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         if (chunks == null || chunks.isEmpty()) {
             return;
         }
-        List<List<Float>> embeddings = embeddingService.embedBatch(chunks.stream().map(KnowledgeChunkDO::getContent).toList());
-        if (embeddings == null || embeddings.size() != chunks.size()) {
-            throw new IllegalStateException("embedding result size mismatch");
-        }
-        List<VectorChunk> vectorChunks = new ArrayList<>(chunks.size());
-        for (int i = 0; i < chunks.size(); i++) {
-            KnowledgeChunkDO chunk = chunks.get(i);
-            vectorChunks.add(VectorChunk.builder()
-                    .chunkId(String.valueOf(chunk.getId()))
-                    .content(chunk.getContent())
-                    .metadata(buildVectorMetadata(document, kbDO, chunk))
-                    .embedding(toArray(embeddings.get(i)))
-                    .index(chunk.getChunkIndex())
-                    .build());
-        }
+        List<VectorChunk> vectorChunks = buildVectorChunksInBatches(
+                document,
+                kbDO,
+                chunks,
+                Math.max(1, processingProperties.getEmbeddingBatchSize())
+        );
         vectorStoreService.indexDocumentChunks(kbDO.getCollectionName(), String.valueOf(document.getId()), vectorChunks);
     }
 
@@ -310,6 +305,35 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
 
     private void deleteVector(KnowledgeBaseDO kbDO, String vectorId) {
         vectorStoreService.deleteChunkById(kbDO.getCollectionName(), vectorId);
+    }
+
+    private List<VectorChunk> buildVectorChunksInBatches(KnowledgeDocumentDO document,
+                                                         KnowledgeBaseDO kbDO,
+                                                         List<KnowledgeChunkDO> chunks,
+                                                         int batchSize) {
+        if (chunks == null || chunks.isEmpty()) {
+            return List.of();
+        }
+        List<VectorChunk> vectorChunks = new ArrayList<>(chunks.size());
+        for (int start = 0; start < chunks.size(); start += batchSize) {
+            int end = Math.min(chunks.size(), start + batchSize);
+            List<KnowledgeChunkDO> batch = chunks.subList(start, end);
+            List<List<Float>> embeddings = embeddingService.embedBatch(batch.stream().map(KnowledgeChunkDO::getContent).toList());
+            if (embeddings == null || embeddings.size() != batch.size()) {
+                throw new IllegalStateException("embedding result size mismatch");
+            }
+            for (int index = 0; index < batch.size(); index++) {
+                KnowledgeChunkDO chunk = batch.get(index);
+                vectorChunks.add(VectorChunk.builder()
+                        .chunkId(String.valueOf(chunk.getId()))
+                        .content(chunk.getContent())
+                        .metadata(buildVectorMetadata(document, kbDO, chunk))
+                        .embedding(toArray(embeddings.get(index)))
+                        .index(chunk.getChunkIndex())
+                        .build());
+            }
+        }
+        return vectorChunks;
     }
 
     private Map<String, Object> buildVectorMetadata(KnowledgeDocumentDO document,

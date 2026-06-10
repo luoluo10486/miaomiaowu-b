@@ -3,6 +3,7 @@ package com.personalblog.ragbackend.knowledge.service.vector;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personalblog.ragbackend.core.chunk.VectorChunk;
+import com.personalblog.ragbackend.knowledge.config.RagKnowledgeProcessingProperties;
 import com.personalblog.ragbackend.knowledge.service.vector.model.KnowledgeVectorDocument;
 import com.personalblog.ragbackend.knowledge.service.vector.model.VectorSearchHit;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,11 +31,14 @@ public class PgVectorStoreService implements VectorStoreService {
     private static final String SCHEMA = "public";
     private static final String TABLE_NAME = "t_knowledge_vector";
     private final ObjectMapper objectMapper;
+    private final RagKnowledgeProcessingProperties processingProperties;
 
     public PgVectorStoreService(JdbcTemplate jdbcTemplate,
-                                ObjectMapper objectMapper) {
+                                ObjectMapper objectMapper,
+                                RagKnowledgeProcessingProperties processingProperties) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
+        this.processingProperties = processingProperties;
     }
 
     @Override
@@ -70,32 +74,34 @@ public class PgVectorStoreService implements VectorStoreService {
                     embedding = excluded.embedding,
                     update_time = excluded.update_time
                 """.formatted(table);
-        LocalDateTime now = LocalDateTime.now();
-        for (KnowledgeVectorDocument document : documents) {
-            Map<String, Object> metadata = buildMetadata(
-                    document.metadata(),
-                    vectorSpace.collectionName(),
-                    valueOrNull(document.metadata(), "documentId", "docId", "doc_id"),
-                    valueOrNull(document.metadata(), "chunkId", "chunk_id"),
-                    null,
-                    document.vectorId()
-            );
-            jdbcTemplate.update(connection -> {
-                PreparedStatement statement = connection.prepareStatement(sql);
-                statement.setObject(1, parseLong(metadata, "knowledgeBaseId", "kbId", "kb_id"));
-                statement.setObject(2, parseLong(metadata, "documentId", "docId", "doc_id"));
-                statement.setObject(3, parseLong(metadata, "chunkId", "chunk_id"));
-                statement.setString(4, vectorSpace.collectionName());
-                statement.setString(5, document.vectorId());
-                statement.setString(6, vectorSpace.embeddingModel());
-                statement.setInt(7, vectorSpace.dimension());
-                statement.setString(8, document.content());
-                statement.setString(9, writeJson(metadata));
-                statement.setString(10, toVectorLiteral(document.embedding()));
-                statement.setTimestamp(11, Timestamp.valueOf(now));
-                return statement;
-            });
-        }
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        int batchSize = Math.max(1, processingProperties.getVectorWriteBatchSize());
+        jdbcTemplate.batchUpdate(
+                sql,
+                documents,
+                batchSize,
+                (statement, document) -> {
+                    Map<String, Object> metadata = buildMetadata(
+                            document.metadata(),
+                            vectorSpace.collectionName(),
+                            valueOrNull(document.metadata(), "documentId", "docId", "doc_id"),
+                            valueOrNull(document.metadata(), "chunkId", "chunk_id"),
+                            null,
+                            document.vectorId()
+                    );
+                    statement.setObject(1, parseLong(metadata, "knowledgeBaseId", "kbId", "kb_id"));
+                    statement.setObject(2, parseLong(metadata, "documentId", "docId", "doc_id"));
+                    statement.setObject(3, parseLong(metadata, "chunkId", "chunk_id"));
+                    statement.setString(4, vectorSpace.collectionName());
+                    statement.setString(5, document.vectorId());
+                    statement.setString(6, vectorSpace.embeddingModel());
+                    statement.setInt(7, vectorSpace.dimension());
+                    statement.setString(8, document.content());
+                    statement.setString(9, writeJson(metadata));
+                    statement.setString(10, toVectorLiteral(document.embedding()));
+                    statement.setTimestamp(11, now);
+                }
+        );
     }
 
     @Override
@@ -152,58 +158,61 @@ public class PgVectorStoreService implements VectorStoreService {
         if (chunks == null || chunks.isEmpty()) {
             return;
         }
-        for (VectorChunk chunk : chunks) {
-            Map<String, Object> metadata = buildMetadata(
-                    chunk.getMetadata(),
-                    collectionName,
-                    docId,
-                    chunk.getChunkId(),
-                    chunk.getIndex(),
-                    chunk.getChunkId()
-            );
-            long now = Timestamp.valueOf(LocalDateTime.now()).getTime();
-            jdbcTemplate.update(connection -> {
-                PreparedStatement statement = connection.prepareStatement("""
-                        insert into %s (
-                            kb_id,
-                            doc_id,
-                            chunk_id,
-                            collection_name,
-                            vector_id,
-                            embedding_model,
-                            embedding_dim,
-                            content,
-                            metadata,
-                            embedding,
-                            deleted,
-                            update_time
-                        ) values (?, ?, ?, ?, ?, ?, ?, ?, cast(? as jsonb), cast(? as vector), 0, ?)
-                        on conflict (collection_name, vector_id, deleted)
-                        do update set
-                            kb_id = excluded.kb_id,
-                            doc_id = excluded.doc_id,
-                            chunk_id = excluded.chunk_id,
-                            embedding_model = excluded.embedding_model,
-                            embedding_dim = excluded.embedding_dim,
-                            content = excluded.content,
-                            metadata = excluded.metadata,
-                            embedding = excluded.embedding,
-                            update_time = excluded.update_time
-                        """.formatted(qualifiedTable()));
-                statement.setObject(1, parseLong(metadata, "knowledgeBaseId", "kbId", "kb_id"));
-                statement.setObject(2, parseLong(metadata, "documentId", "docId", "doc_id", docId));
-                statement.setObject(3, parseLong(metadata, "chunkId", "chunk_id", chunk.getChunkId()));
-                statement.setString(4, collectionName);
-                statement.setString(5, chunk.getChunkId());
-                statement.setString(6, String.valueOf(metadata.getOrDefault("embeddingModel", "")));
-                statement.setInt(7, chunk.getEmbedding() == null ? 0 : chunk.getEmbedding().length);
-                statement.setString(8, chunk.getContent());
-                statement.setString(9, writeJson(metadata));
-                statement.setString(10, toVectorLiteral(chunk.getEmbedding()));
-                statement.setTimestamp(11, new Timestamp(now));
-                return statement;
-            });
-        }
+        String sql = """
+                insert into %s (
+                    kb_id,
+                    doc_id,
+                    chunk_id,
+                    collection_name,
+                    vector_id,
+                    embedding_model,
+                    embedding_dim,
+                    content,
+                    metadata,
+                    embedding,
+                    deleted,
+                    update_time
+                ) values (?, ?, ?, ?, ?, ?, ?, ?, cast(? as jsonb), cast(? as vector), 0, ?)
+                on conflict (collection_name, vector_id, deleted)
+                do update set
+                    kb_id = excluded.kb_id,
+                    doc_id = excluded.doc_id,
+                    chunk_id = excluded.chunk_id,
+                    embedding_model = excluded.embedding_model,
+                    embedding_dim = excluded.embedding_dim,
+                    content = excluded.content,
+                    metadata = excluded.metadata,
+                    embedding = excluded.embedding,
+                    update_time = excluded.update_time
+                """.formatted(qualifiedTable());
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        int batchSize = Math.max(1, processingProperties.getVectorWriteBatchSize());
+        jdbcTemplate.batchUpdate(
+                sql,
+                chunks,
+                batchSize,
+                (statement, chunk) -> {
+                    Map<String, Object> metadata = buildMetadata(
+                            chunk.getMetadata(),
+                            collectionName,
+                            docId,
+                            chunk.getChunkId(),
+                            chunk.getIndex(),
+                            chunk.getChunkId()
+                    );
+                    statement.setObject(1, parseLong(metadata, "knowledgeBaseId", "kbId", "kb_id"));
+                    statement.setObject(2, parseLong(metadata, "documentId", "docId", "doc_id", docId));
+                    statement.setObject(3, parseLong(metadata, "chunkId", "chunk_id", chunk.getChunkId()));
+                    statement.setString(4, collectionName);
+                    statement.setString(5, chunk.getChunkId());
+                    statement.setString(6, String.valueOf(metadata.getOrDefault("embeddingModel", "")));
+                    statement.setInt(7, chunk.getEmbedding() == null ? 0 : chunk.getEmbedding().length);
+                    statement.setString(8, chunk.getContent());
+                    statement.setString(9, writeJson(metadata));
+                    statement.setString(10, toVectorLiteral(chunk.getEmbedding()));
+                    statement.setTimestamp(11, now);
+                }
+        );
     }
 
     @Override
