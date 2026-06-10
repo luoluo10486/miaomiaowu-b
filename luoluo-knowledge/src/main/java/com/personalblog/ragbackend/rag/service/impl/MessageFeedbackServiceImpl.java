@@ -37,7 +37,7 @@ public class MessageFeedbackServiceImpl implements MessageFeedbackService {
     private final RagConversationMessageMapper conversationMessageMapper;
     private final RocketMQTemplate rocketMQTemplate;
 
-    @Value("message-feedback_topic${unique-name:}")
+    @Value("${rocketmq.topic.message-feedback}")
     private String feedbackTopic;
 
     public MessageFeedbackServiceImpl(RagMessageFeedbackMapper feedbackMapper,

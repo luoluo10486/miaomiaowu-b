@@ -67,6 +67,9 @@ rocketmq:
   producer:
     group: ragent-producer${unique-name:}_pg
     send-message-timeout: 2000
+  topic:
+    knowledge-document-chunk: knowledge-document-chunk_topic${unique-name:}
+    message-feedback: message-feedback_topic${unique-name:}
 
 milvus:
   uri: http://localhost:19530

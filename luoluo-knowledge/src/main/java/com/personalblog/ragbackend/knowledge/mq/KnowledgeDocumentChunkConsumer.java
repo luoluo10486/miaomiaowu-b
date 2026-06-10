@@ -16,7 +16,7 @@ import org.springframework.util.StringUtils;
  */
 @Component
 @RocketMQMessageListener(
-        topic = "knowledge-document-chunk_topic${unique-name:}",
+        topic = "${rocketmq.topic.knowledge-document-chunk}",
         consumerGroup = "knowledge-document-chunk_cg${unique-name:}",
         consumeThreadNumber = 1,
         consumeThreadMax = 1
@@ -37,6 +37,8 @@ public class KnowledgeDocumentChunkConsumer implements RocketMQListener<MessageW
             log.warn("Skip empty knowledge document chunk event");
             return;
         }
+        log.info("received knowledge document chunk message, docId={}, operator={}",
+                event.getDocumentId(), event.getOperator());
 
         LoginUser loginUser = null;
         if (StringUtils.hasText(event.getOperator())) {

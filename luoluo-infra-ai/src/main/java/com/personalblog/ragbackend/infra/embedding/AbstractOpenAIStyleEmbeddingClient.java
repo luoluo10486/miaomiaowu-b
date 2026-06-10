@@ -66,15 +66,34 @@ public abstract class AbstractOpenAIStyleEmbeddingClient implements EmbeddingCli
 
         int batchSize = maxBatchSize();
         if (batchSize <= 0 || texts.size() <= batchSize) {
-            return doEmbed(texts, target);
+            return doEmbedWithAdaptiveFallback(texts, target);
         }
 
         List<List<Float>> results = new ArrayList<>(texts.size());
         for (int index = 0; index < texts.size(); index += batchSize) {
             int end = Math.min(index + batchSize, texts.size());
-            results.addAll(doEmbed(texts.subList(index, end), target));
+            results.addAll(doEmbedWithAdaptiveFallback(texts.subList(index, end), target));
         }
         return results;
+    }
+
+    private List<List<Float>> doEmbedWithAdaptiveFallback(List<String> texts, ModelTarget target) {
+        try {
+            return doEmbed(texts, target);
+        } catch (ModelClientException exception) {
+            if (!shouldSplitAndRetry(texts, exception)) {
+                throw exception;
+            }
+            int nextBatchSize = Math.max(1, (texts.size() + 1) / 2);
+            log.warn("embedding request failed, retrying with smaller batches, provider={}, model={}, batchSize={}, nextBatchSize={}, errorType={}, message={}",
+                    provider(), target.id(), texts.size(), nextBatchSize, exception.getErrorType(), exception.getMessage());
+            List<List<Float>> results = new ArrayList<>(texts.size());
+            for (int start = 0; start < texts.size(); start += nextBatchSize) {
+                int end = Math.min(texts.size(), start + nextBatchSize);
+                results.addAll(doEmbedWithAdaptiveFallback(texts.subList(start, end), target));
+            }
+            return results;
+        }
     }
 
     protected List<List<Float>> doEmbed(List<String> texts, ModelTarget target) {
@@ -172,6 +191,15 @@ public abstract class AbstractOpenAIStyleEmbeddingClient implements EmbeddingCli
                 ModelClientErrorType.RATE_LIMITED,
                 429)
                 : lastRateLimited;
+    }
+
+    private boolean shouldSplitAndRetry(List<String> texts, ModelClientException exception) {
+        if (texts == null || texts.size() <= 1 || exception == null || exception.getErrorType() == null) {
+            return false;
+        }
+        return exception.getErrorType() == ModelClientErrorType.NETWORK_ERROR
+                || exception.getErrorType() == ModelClientErrorType.RATE_LIMITED
+                || exception.getErrorType() == ModelClientErrorType.SERVER_ERROR;
     }
 
     private List<List<Float>> executeOnce(HttpRequest request, List<String> texts, ModelTarget target) {

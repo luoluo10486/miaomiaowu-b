@@ -65,6 +65,7 @@ import com.personalblog.ragbackend.ingestion.service.IngestionPipelineService;
 import com.personalblog.ragbackend.knowledge.service.vector.KnowledgeVectorSpaceResolver;
 import com.personalblog.ragbackend.knowledge.service.vector.VectorStoreService;
 import com.personalblog.ragbackend.knowledge.schedule.CronScheduleHelper;
+import com.personalblog.ragbackend.knowledge.schedule.RunningDocumentRecoveryProcessor;
 import com.personalblog.ragbackend.rag.dto.StoredFileDTO;
 import org.apache.rocketmq.common.message.MessageConst;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
@@ -102,7 +103,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
-    @Value("knowledge-document-chunk_topic${unique-name:}")
+    @Value("${rocketmq.topic.knowledge-document-chunk}")
     private String chunkTopic;
 
     private final KnowledgeBaseMapper knowledgeBaseMapper;
@@ -126,6 +127,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final VectorStoreService vectorStoreService;
     private final EmbeddingService embeddingService;
     private final TokenCounterService tokenCounterService;
+    private final RunningDocumentRecoveryProcessor runningDocumentRecoveryProcessor;
     private final TransactionOperations transactionOperations;
     private final ObjectMapper objectMapper;
     private final RocketMQTemplate rocketMQTemplate;
@@ -154,6 +156,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                                         VectorStoreService vectorStoreService,
                                         EmbeddingService embeddingService,
                                         TokenCounterService tokenCounterService,
+                                        RunningDocumentRecoveryProcessor runningDocumentRecoveryProcessor,
                                         TransactionOperations transactionOperations,
                                         ObjectMapper objectMapper,
                                         RocketMQTemplate rocketMQTemplate,
@@ -181,6 +184,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         this.vectorStoreService = vectorStoreService;
         this.embeddingService = embeddingService;
         this.tokenCounterService = tokenCounterService;
+        this.runningDocumentRecoveryProcessor = runningDocumentRecoveryProcessor;
         this.transactionOperations = transactionOperations;
         this.objectMapper = objectMapper;
         this.rocketMQTemplate = rocketMQTemplate;
@@ -313,15 +317,21 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     public int startChunkByKnowledgeBase(String kbId) {
         KnowledgeBaseDO knowledgeBase = requireKnowledgeBase(parseId(kbId));
         knowledgeBaseAccessService.assertManageable(knowledgeBase);
+        int resetRunningCount = runningDocumentRecoveryProcessor.recoverKnowledgeBase(knowledgeBase.getId());
         List<KnowledgeDocumentDO> documents = knowledgeDocumentMapper.selectList(
                 new LambdaQueryWrapper<KnowledgeDocumentDO>()
                         .eq(KnowledgeDocumentDO::getKbId, knowledgeBase.getId())
                         .eq(KnowledgeDocumentDO::getDeleted, 0)
                         .eq(KnowledgeDocumentDO::getEnabled, 1)
-                        .ne(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
+                        .in(KnowledgeDocumentDO::getStatus, List.of(
+                                DocumentStatus.PENDING.getCode(),
+                                DocumentStatus.FAILED.getCode()
+                        ))
                         .orderByAsc(KnowledgeDocumentDO::getId)
         );
         if (documents == null || documents.isEmpty()) {
+            log.info("start chunk-all finished, kbId={}, resetRunningCount={}, startedCount=0",
+                    knowledgeBase.getId(), resetRunningCount);
             return 0;
         }
         String operator = StringUtils.hasText(UserContext.getUsername()) ? UserContext.getUsername() : "system";
@@ -331,6 +341,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 startedCount++;
             }
         }
+        log.info("start chunk-all finished, kbId={}, resetRunningCount={}, startedCount={}",
+                knowledgeBase.getId(), resetRunningCount, startedCount);
         return startedCount;
     }
 
@@ -910,6 +922,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         for (int start = 0; start < chunks.size(); start += batchSize) {
             int end = Math.min(chunks.size(), start + batchSize);
             List<DocumentChunk> batch = chunks.subList(start, end);
+            touchRunningDocument(document.getId());
             log.info("embedding document chunk batch, docId={}, batchStart={}, batchEnd={}, batchSize={}",
                     document.getId(), start, end - 1, batch.size());
             List<String> contents = new ArrayList<>(batch.size());
@@ -936,6 +949,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         for (int start = 0; start < chunks.size(); start += batchSize) {
             int end = Math.min(chunks.size(), start + batchSize);
             List<KnowledgeChunkVO> batch = chunks.subList(start, end);
+            touchRunningDocument(document.getId());
             log.info("re-indexing document chunk batch, docId={}, batchStart={}, batchEnd={}, batchSize={}",
                     document.getId(), start, end - 1, batch.size());
             List<String> contents = new ArrayList<>(batch.size());
@@ -958,6 +972,19 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             }
         }
         return vectorChunks;
+    }
+
+    private void touchRunningDocument(Long documentId) {
+        if (documentId == null) {
+            return;
+        }
+        knowledgeDocumentMapper.update(
+                null,
+                new LambdaUpdateWrapper<KnowledgeDocumentDO>()
+                        .set(KnowledgeDocumentDO::getUpdatedAt, LocalDateTime.now())
+                        .eq(KnowledgeDocumentDO::getId, documentId)
+                        .eq(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
+        );
     }
 
     private TextChunkingOptions buildChunkingOptions(KnowledgeDocumentDO document) {
@@ -1284,6 +1311,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         MessageWrapper<KnowledgeDocumentChunkEvent> wrapper = new MessageWrapper<>();
         wrapper.setKeys(String.valueOf(documentId));
         wrapper.setBody(event);
+        log.info("sending knowledge document chunk message, docId={}, topic={}, operator={}",
+                documentId, chunkTopic, operator);
         rocketMQTemplate.syncSend(
                 chunkTopic,
                 MessageBuilder.withPayload(wrapper)
@@ -1297,10 +1326,13 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 null,
                 new LambdaUpdateWrapper<KnowledgeDocumentDO>()
                         .set(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
+                        .set(KnowledgeDocumentDO::getErrorMessage, null)
+                        .set(KnowledgeDocumentDO::getUpdatedAt, LocalDateTime.now())
                         .eq(KnowledgeDocumentDO::getId, document.getId())
                         .ne(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
         );
         if (updated <= 0) {
+            log.info("skip chunk start because document is already running, docId={}", document.getId());
             return false;
         }
 

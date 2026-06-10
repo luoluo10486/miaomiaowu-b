@@ -28,6 +28,15 @@ public class RunningDocumentRecoveryProcessor {
 
     @Transactional
     public int recover() {
+        return recoverInternal(null);
+    }
+
+    @Transactional
+    public int recoverKnowledgeBase(Long kbId) {
+        return recoverInternal(kbId);
+    }
+
+    private int recoverInternal(Long kbId) {
         long timeoutMinutes = Math.max(1L, scheduleProperties.getRunningTimeoutMinutes() == null
                 ? 120L
                 : scheduleProperties.getRunningTimeoutMinutes());
@@ -38,14 +47,14 @@ public class RunningDocumentRecoveryProcessor {
         LocalDateTime cutoff = now.minusMinutes(timeoutMinutes);
         String errorMessage = "chunk task timed out or service restarted before completion";
 
-        List<KnowledgeDocumentDO> staleDocuments = knowledgeDocumentMapper.selectList(
-                new LambdaQueryWrapper<KnowledgeDocumentDO>()
-                        .eq(KnowledgeDocumentDO::getDeleted, 0)
-                        .eq(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
-                        .le(KnowledgeDocumentDO::getUpdatedAt, cutoff)
-                        .orderByAsc(KnowledgeDocumentDO::getUpdatedAt)
-                        .last("LIMIT " + batchSize)
-        );
+        LambdaQueryWrapper<KnowledgeDocumentDO> queryWrapper = new LambdaQueryWrapper<KnowledgeDocumentDO>()
+                .eq(KnowledgeDocumentDO::getDeleted, 0)
+                .eq(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
+                .eq(kbId != null, KnowledgeDocumentDO::getKbId, kbId)
+                .le(KnowledgeDocumentDO::getUpdatedAt, cutoff)
+                .orderByAsc(KnowledgeDocumentDO::getUpdatedAt)
+                .last("LIMIT " + batchSize);
+        List<KnowledgeDocumentDO> staleDocuments = knowledgeDocumentMapper.selectList(queryWrapper);
         if (staleDocuments == null || staleDocuments.isEmpty()) {
             return 0;
         }
@@ -55,8 +64,8 @@ public class RunningDocumentRecoveryProcessor {
             markRunningLogsFailed(document.getId(), now, errorMessage);
         }
 
-        log.warn("Recovered stale running knowledge documents, count={}, timeoutMinutes={}",
-                staleDocuments.size(), timeoutMinutes);
+        log.warn("Recovered stale running knowledge documents, kbId={}, count={}, timeoutMinutes={}",
+                kbId, staleDocuments.size(), timeoutMinutes);
         return staleDocuments.size();
     }
 

@@ -15,7 +15,7 @@ import org.springframework.util.StringUtils;
  */
 @Component
 @RocketMQMessageListener(
-        topic = "message-feedback_topic${unique-name:}",
+        topic = "${rocketmq.topic.message-feedback}",
         consumerGroup = "message-feedback_cg${unique-name:}"
 )
 public class MessageFeedbackConsumer implements RocketMQListener<MessageWrapper<MessageFeedbackEvent>> {

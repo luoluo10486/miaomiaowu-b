@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -67,6 +68,36 @@ class SiliconFlowEmbeddingClientTest {
         assertThat(embeddings.get(0)).containsExactly(0.0F, 0.5F);
         assertThat(embeddings.get(32)).containsExactly(32.0F, 32.5F);
         verify(httpClient, times(5)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+    }
+
+    @Test
+    void shouldRetryTimedOutBatchWithSmallerRequests() throws Exception {
+        HttpClient httpClient = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response1 = mock(HttpResponse.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response2 = mock(HttpResponse.class);
+
+        when(response1.statusCode()).thenReturn(200);
+        when(response1.body()).thenReturn(buildOpenAiEmbeddingBody(1, 0));
+        when(response2.statusCode()).thenReturn(200);
+        when(response2.body()).thenReturn(buildOpenAiEmbeddingBody(1, 1));
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenThrow(new HttpTimeoutException("request timed out"))
+                .thenReturn(response1, response2);
+
+        SiliconFlowEmbeddingClient client = new SiliconFlowEmbeddingClient(
+                httpClient,
+                new ObjectMapper(),
+                aiProperties()
+        );
+
+        List<List<Float>> embeddings = client.embedBatch(List.of("text-0", "text-1"), modelTarget());
+
+        assertThat(embeddings).hasSize(2);
+        assertThat(embeddings.get(0)).containsExactly(0.0F, 0.5F);
+        assertThat(embeddings.get(1)).containsExactly(1.0F, 1.5F);
+        verify(httpClient, times(3)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
     }
 
     private AIModelProperties aiProperties() {
